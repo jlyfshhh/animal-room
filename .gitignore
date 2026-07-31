@@ -1,0 +1,7 @@
+# Pi-specific deployment artifact — NOT for the public repo as-is.
+# deploy/animal-app-backup hardcodes /home/cc and /srv/sd-backup and isn't
+# wired into install.sh, so publishing it would leak the host username and
+# break for anyone else. Generalize it first (derive the install root from
+# $HOME or a flag, make the backup mount configurable, and install it from
+# install.sh) before removing this ignore and committing it.
+/deploy/animal-app-backup
