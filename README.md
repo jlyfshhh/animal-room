@@ -5,6 +5,7 @@
 
 <p align="center">
   <a href="#install"><img alt="One-line install" src="https://img.shields.io/badge/install-one%20command-success"></a>
+  <a href="https://jlyfshhh.github.io/animal-room/"><img alt="Haven website" src="https://img.shields.io/badge/website-meet%20Haven-3f755a"></a>
   <img alt="Raspberry Pi" src="https://img.shields.io/badge/Raspberry%20Pi-64--bit-C51A4A?logo=raspberrypi&logoColor=white">
   <a href="https://ko-fi.com/jlyfshhh"><img alt="Ko-fi" src="https://img.shields.io/badge/Ko--fi-buy%20crickets-FF5E5B?logo=ko-fi&logoColor=white"></a>
 </p>
@@ -17,6 +18,8 @@ one calm room dashboard.**
 Haven is not another database or another app to maintain. It is the combined
 installation and read-only wall display you get when Bask and Shed run
 together. Each app stays independent, and each keeps its own portable data.
+
+**[Meet Haven on the project website →](https://jlyfshhh.github.io/animal-room/)**
 
 ## Which should I choose?
 
