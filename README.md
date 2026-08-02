@@ -1,6 +1,6 @@
 <p align="center">
-  <b>🏠 The Animal Room installer</b><br>
-  One command to set up <b>Bask</b>, <b>Shed</b>, and <b>Clarity</b> — the self-hosted animal-care family — on your Raspberry Pi.
+  <b>🌿 Haven</b><br>
+  One installer for <b>Bask</b>, <b>Shed</b>, or their combined animal-room dashboard.
 </p>
 
 <p align="center">
@@ -11,78 +11,93 @@
 
 ---
 
-One installer for the **Bask**, **Shed**, and **Clarity** self-hosted animal-care
-apps. It is designed for a 64-bit Raspberry Pi running Raspberry Pi OS, but also
-works on 64-bit Debian systems.
+**Bask watches the habitat. Shed organizes the care. Haven brings both into
+one calm room dashboard.**
+
+Haven is not another database or another app to maintain. It is the combined
+installation and read-only wall display you get when Bask and Shed run
+together. Each app stays independent, and each keeps its own portable data.
+
+## Which should I choose?
+
+| Choice | Best when you want |
+|---|---|
+| **Bask** | Live enclosure temperature and humidity monitoring from compatible Bluetooth sensors |
+| **Shed** | Shared care schedules, household task attribution, weights, feeding, equipment, notes, and history |
+| **Haven** *(recommended)* | Everything in Bask and Shed, plus one wall dashboard showing enclosure status and today's remaining care |
+
+You can start with either app and run the installer again later to add the
+other one and enable Haven. No data is replaced.
 
 ## Install
 
-On the Pi, run:
+On a 64-bit Raspberry Pi running Raspberry Pi OS, or another 64-bit Debian
+system, run:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/jlyfshhh/animal-room/main/install.sh | bash
 ```
 
-The installer asks which apps you want:
+Choose **Bask**, **Shed**, or **Haven**. The installer adds Docker from Docker's
+official Debian repository when needed, installs the selected app or apps, and
+automatically makes the secure server-to-server connection required by Haven.
 
-- **Bask** — enclosure temperature and humidity sensor monitoring
-- **Shed** — terrestrial animal husbandry schedules and records
-- **Clarity** — aquarium and pond maintenance
-- **All three**
-
-It installs Docker from Docker's official Debian repository when needed, then
-uses each app's own installer. Re-running the command updates code and
-containers without replacing settings or databases.
-
-For an unattended install:
+For an unattended Haven install:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/jlyfshhh/animal-room/main/install.sh |
-  bash -s -- --all
+  bash -s -- --haven
 ```
 
-You can also use `--bask`, `--shed`, or `--clarity` in any combination.
+`--bask`, `--shed`, and `--all` are also accepted. `--all` is an alias for
+Haven. Re-running the command updates the selected apps without replacing data.
 
-## Default addresses and storage
+## Addresses and storage
 
-| App | Address | Code | Persistent data |
-|---|---|---|---|
-| Bask | `http://HOSTNAME.local:8080` | `~/bask` | `~/bask/data` |
-| Shed | `http://HOSTNAME.local:3000` | `~/shed` | `~/shed/data` |
-| Clarity | `http://HOSTNAME.local:3001` | `~/clarity` | `~/clarity/data` |
+| Surface | Address | Persistent data |
+|---|---|---|
+| Bask | `http://HOSTNAME.local:8080` | `~/bask/data` |
+| Shed | `http://HOSTNAME.local:3000` | `~/shed/data` |
+| Haven room display | `http://HOSTNAME.local:8080/room.html` | Reads Bask and Shed; stores no separate copy |
 
 Set `ANIMAL_ROOM_HOME` or pass `--install-root PATH` to choose a different
 parent directory.
 
-## Existing Bask installs
+## What Haven shares
 
-When Bask detects its former systemd/virtualenv installation, it:
+Haven gives Bask read-only access to a deliberately limited Shed display feed.
+That feed includes today's incomplete and overdue care plus anonymous totals.
+It excludes household identities, rewards, access codes, history, completion
+IDs, and all write access. A separate random display secret is generated during
+installation and stays in the apps' private `.env` files; it is never sent to
+the browser.
 
-1. stops and disables the old Bask services;
-2. creates a timestamped pre-migration backup;
-3. snapshots the SQLite database safely, including any WAL data;
-4. copies settings and history into `~/bask/data`; and
-5. starts the Docker version.
+Because Bask and Shed remain separate services, either app can still be used on
+its own. The room display clearly reports when one side is unavailable instead
+of hiding the failure.
 
-The original files remain available until you choose to remove them.
+## Existing Bask or Shed installs
 
-## Data ownership
+Run the Haven installer with the same install root. Existing databases,
+settings, and backups remain in place. Bask also safely migrates its former
+systemd/virtualenv installation when it detects one, including a timestamped
+pre-migration SQLite snapshot.
 
-The installer does not merge the apps' databases or put data in a cloud
-service. Each app keeps ordinary files in its own `data` directory so they can
-be backed up, moved to another computer, or imported into a future version.
+## Data ownership and safety
 
-Do not expose ports 8080, 3000, or 3001 directly to the public internet.
+- Bask and Shed keep ordinary files in separate `data` directories.
+- Both projects include backup tools; Shed also exports portable JSON and CSV.
+- The installer does not merge databases or upload animal data to a cloud.
+- Do not expose ports 8080 or 3000 directly to the public internet.
 
-## The animal-room family
+Clarity, the earlier aquatic companion, is archived. Existing Clarity installs
+continue to work, and the legacy `--clarity` installer flag remains available
+for current users, but it is no longer part of the new-user chooser.
 
-This installer sets up any combination of three companion projects for keepers:
+## Projects
 
-| | Project | What it watches |
+| | Project | Purpose |
 |---|---|---|
-| ☀️ | **[Bask](https://github.com/jlyfshhh/bask)** | The environment — live temperature & humidity on a wall display |
-| 🐍 | **[Shed](https://github.com/jlyfshhh/shed)** | The care — feeding, weights, enclosure work, and history for terrestrial animals |
-| 💧 | **[Clarity](https://github.com/jlyfshhh/clarity)** | The water — aquarium & pond tests, maintenance, and livestock |
-
-They're separate self-hosted services on purpose — one app can never take down
-another — but they share a design language, and each keeps its own portable data.
+| ☀️ | **[Bask](https://github.com/jlyfshhh/bask)** | The environment — live enclosure temperature and humidity |
+| 🐍 | **[Shed](https://github.com/jlyfshhh/shed)** | The care — schedules, records, weights, feeding, and shared household work |
+| 🌿 | **Haven** *(this repo)* | The bridge — one installer and one room view for Bask + Shed |
