@@ -1,11 +1,12 @@
 <p align="center">
-  <b>🌿 Haven</b><br>
-  One installer for <b>Bask</b>, <b>Shed</b>, or their combined animal-room dashboard.
+  <b>🌿 Animal Room</b><br>
+  The project site at <b>animalroom.app</b>, and <b>Haven</b> — one installer for
+  <b>Bask</b>, <b>Shed</b>, or their combined room dashboard.
 </p>
 
 <p align="center">
   <a href="#install"><img alt="One-line install" src="https://img.shields.io/badge/install-one%20command-success"></a>
-  <a href="https://jlyfshhh.github.io/animal-room/"><img alt="Haven website" src="https://img.shields.io/badge/website-meet%20Haven-3f755a"></a>
+  <a href="https://animalroom.app/haven/"><img alt="Haven website" src="https://img.shields.io/badge/website-meet%20Haven-3f755a"></a>
   <img alt="Raspberry Pi" src="https://img.shields.io/badge/Raspberry%20Pi-64--bit-C51A4A?logo=raspberrypi&logoColor=white">
   <a href="https://ko-fi.com/jlyfshhh"><img alt="Ko-fi" src="https://img.shields.io/badge/Ko--fi-buy%20crickets-FF5E5B?logo=ko-fi&logoColor=white"></a>
 </p>
@@ -19,7 +20,7 @@ Haven is not another database or another app to maintain. It is the combined
 installation and read-only wall display you get when Bask and Shed run
 together. Each app stays independent, and each keeps its own portable data.
 
-**[Meet Haven on the project website →](https://jlyfshhh.github.io/animal-room/)**
+**[Meet Haven on the project website →](https://animalroom.app/haven/)**
 
 ## Which should I choose?
 
@@ -38,7 +39,7 @@ On a 64-bit Raspberry Pi running Raspberry Pi OS, or another 64-bit Debian
 system, run:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/jlyfshhh/animal-room/main/install.sh | bash
+curl -fsSL https://animalroom.app/install.sh | bash
 ```
 
 Choose **Bask**, **Shed**, or **Haven**. The installer adds Docker from Docker's
@@ -48,8 +49,7 @@ automatically makes the secure server-to-server connection required by Haven.
 For an unattended Haven install:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/jlyfshhh/animal-room/main/install.sh |
-  bash -s -- --haven
+curl -fsSL https://animalroom.app/install.sh | bash -s -- --haven
 ```
 
 `--bask`, `--shed`, and `--all` are also accepted. `--all` is an alias for
@@ -99,4 +99,8 @@ pre-migration SQLite snapshot.
 |---|---|---|
 | ☀️ | **[Bask](https://github.com/jlyfshhh/bask)** | The environment — live enclosure temperature and humidity |
 | 🐍 | **[Shed](https://github.com/jlyfshhh/shed)** | The care — schedules, records, weights, feeding, and shared household work |
-| 🌿 | **Haven** *(this repo)* | The bridge — one installer and one room view for Bask + Shed |
+| 🌿 | **Haven** *(built here)* | The bridge — one installer and one room view for Bask + Shed |
+
+This repository also holds the site served at **animalroom.app**. The landing
+pages for Shed and Bask live in `site/shed/` and `site/bask/` here — not in
+their own repositories, which keep only a redirect.
