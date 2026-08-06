@@ -1,0 +1,9 @@
+<svg viewBox="0 0 196 70" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Shed">
+  <!-- coiled shed-skin spiral -->
+  <path d="M16 40 A22 22 0 1 1 60 40" fill="none" stroke="#F2A516" stroke-width="5" stroke-linecap="round"/>
+  <path d="M60 40 A15 15 0 1 1 30 40" fill="none" stroke="#F2A516" stroke-width="5" stroke-linecap="round"/>
+  <path d="M30 40 A9 9 0 1 1 48 40" fill="none" stroke="#A8B7A1" stroke-width="5" stroke-linecap="round"/>
+  <path d="M48 40 A4 4 0 1 1 40 40" fill="none" stroke="#A8B7A1" stroke-width="5" stroke-linecap="round"/>
+  <text x="78" y="54" font-size="46" font-weight="700" fill="#E0701A"
+        font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">shed</text>
+</svg>
