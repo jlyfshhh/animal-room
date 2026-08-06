@@ -6,7 +6,6 @@ install_root="${ANIMAL_ROOM_HOME:-$HOME}"
 dry_run=false
 select_bask=false
 select_shed=false
-select_clarity=false
 select_haven=false
 has_selection=false
 
@@ -20,8 +19,6 @@ Usage: install.sh [--bask] [--shed] [--haven] [--all]
 
 With no app flags, the installer opens an interactive chooser.
 
-Legacy: --clarity remains available for existing Clarity installations, but
-Clarity is no longer offered in the interactive chooser.
 USAGE
 }
 
@@ -35,7 +32,6 @@ while (($#)); do
       select_haven=true
       has_selection=true
       ;;
-    --clarity) select_clarity=true; has_selection=true ;;
     --all)
       select_bask=true
       select_shed=true
@@ -91,7 +87,6 @@ MENU
 selection=()
 [[ "$select_bask" != true ]] || selection+=("bask")
 [[ "$select_shed" != true ]] || selection+=("shed")
-[[ "$select_clarity" != true ]] || selection+=("clarity")
 [[ "$select_haven" != true ]] || selection+=("haven-dashboard")
 say "Selected: ${selection[*]}"
 echo "    Install root: $install_root"
@@ -167,13 +162,6 @@ if [[ "$select_shed" == true ]]; then
     "SHED_INSTALL_DIR" \
     "$install_root/shed"
 fi
-if [[ "$select_clarity" == true ]]; then
-  run_remote_installer \
-    "Clarity" \
-    "https://raw.githubusercontent.com/jlyfshhh/clarity/main/get-clarity.sh" \
-    "CLARITY_INSTALL_DIR" \
-    "$install_root/clarity"
-fi
 
 set_env_value() {
   local file="$1" key="$2" value="$3"
@@ -215,7 +203,6 @@ Installation complete.
 
 $( [[ "$select_bask" != true ]] || printf '  Bask:    http://%s.local:8080\n' "$host" )
 $( [[ "$select_shed" != true ]] || printf '  Shed:    http://%s.local:3000\n' "$host" )
-$( [[ "$select_clarity" != true ]] || printf '  Clarity: http://%s.local:3001\n' "$host" )
 $( [[ "$select_haven" != true ]] || printf '  Haven:   http://%s.local:8080/room.html\n' "$host" )
 
 Each app keeps its own database and settings in its data directory.

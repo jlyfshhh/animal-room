@@ -14,8 +14,11 @@ combo_output="$(bash "$root/install.sh" --bask --shed --dry-run)"
 [[ "$combo_output" == *"Selected: bask shed"* ]]
 [[ "$combo_output" != *"haven-dashboard"* ]]
 
-legacy_output="$(bash "$root/install.sh" --clarity --dry-run)"
-[[ "$legacy_output" == *"Selected: clarity"* ]]
+# --clarity is gone; it must now fail like any other unknown flag.
+if bash "$root/install.sh" --clarity --dry-run >/dev/null 2>&1; then
+  echo "The retired --clarity flag should be rejected." >&2
+  exit 1
+fi
 
 if bash "$root/install.sh" --unknown >/dev/null 2>&1; then
   echo "Unknown arguments should fail." >&2

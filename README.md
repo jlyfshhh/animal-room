@@ -93,10 +93,6 @@ pre-migration SQLite snapshot.
 - The installer does not merge databases or upload animal data to a cloud.
 - Do not expose ports 8080 or 3000 directly to the public internet.
 
-Clarity, the earlier aquatic companion, is archived. Existing Clarity installs
-continue to work, and the legacy `--clarity` installer flag remains available
-for current users, but it is no longer part of the new-user chooser.
-
 ## Projects
 
 | | Project | Purpose |
