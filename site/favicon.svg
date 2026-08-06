@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Animal Room">
+  <rect width="64" height="64" rx="16" fill="#17382d"/>
+  <path d="M44 16c0 14-8.5 22.5-20 23.5 1-9 5.5-15.5 13-19-8.5 2-14.5 8-16.5 17C18 32 17 27 17.5 22 25 14 34 12 44 16z" fill="#77a77e"/>
+  <path d="M18 48c2-8 6.5-14 13-18" stroke="#d6f0d7" stroke-width="3" stroke-linecap="round" fill="none"/>
+</svg>
