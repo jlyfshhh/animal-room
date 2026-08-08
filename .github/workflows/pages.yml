@@ -6,6 +6,7 @@ on:
     paths:
       - "site/**"
       - "install.sh"
+      - "uninstall.sh"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -27,10 +28,13 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: actions/configure-pages@v5
-      # Serve the installer from the apex so the documented one-liner is
-      # https://animalroom.app/install.sh — the repo root stays the source of truth.
-      - name: Publish the installer alongside the site
-        run: cp install.sh site/install.sh
+      # Serve both scripts from the apex so the documented one-liners are
+      # https://animalroom.app/install.sh and .../uninstall.sh — the repo root
+      # stays the source of truth for each.
+      - name: Publish the installer and uninstaller alongside the site
+        run: |
+          cp install.sh site/install.sh
+          cp uninstall.sh site/uninstall.sh
       - uses: actions/upload-pages-artifact@v4
         with:
           path: site

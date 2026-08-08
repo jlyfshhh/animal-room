@@ -33,6 +33,26 @@ together. Each app stays independent, and each keeps its own portable data.
 You can start with either app and run the installer again later to add the
 other one and enable Haven. No data is replaced.
 
+## What you need
+
+| | Bask | Shed |
+|---|---|---|
+| Memory | 512 MB works | **2 GB or more** |
+| Known good | Pi Zero 2 W, Pi 3, Pi 4, Pi 5 | Pi 4, Pi 5 |
+| Not enough | — | Pi Zero / Zero 2 W, Pi 3 with 1 GB |
+
+Both need a 64-bit OS and a few GB of free disk.
+
+**Bask is light** — Python, no build step — and is happy on the smallest boards.
+**Shed compiles its web interface on the machine you install it on**, and that
+build is the demanding part. On a board with under 2 GB the build runs out of
+memory and the install fails or never finishes, even though Bask on the same
+board is fine.
+
+If that is where you are: install Bask now and add Shed later on a bigger board.
+The installer is happy to do one and not the other, and adding the second one
+later is not a reinstall of the first.
+
 ## Install
 
 On a 64-bit Raspberry Pi running Raspberry Pi OS, or another 64-bit Debian
@@ -85,6 +105,33 @@ Run the Haven installer with the same install root. Existing databases,
 settings, and backups remain in place. Bask also safely migrates its former
 systemd/virtualenv installation when it detects one, including a timestamped
 pre-migration SQLite snapshot.
+
+## Uninstalling
+
+```bash
+curl -fsSL https://animalroom.app/uninstall.sh | bash
+```
+
+Choose Bask, Shed, or both. **Your records are kept by default.** The apps stop
+and their containers and images are removed, but the `data` directory and your
+settings stay exactly where they are, so reinstalling later — here or on a
+different machine — picks up where you left off.
+
+```bash
+curl -fsSL https://animalroom.app/uninstall.sh | bash -s -- --shed
+```
+
+`--bask`, `--shed`, and `--all` skip the chooser. `--install-root PATH` matches
+the installer.
+
+To remove one app and keep the other — for example dropping Shed from a board
+that cannot build it, while Bask keeps running — uninstall just that one.
+
+To erase the records too, add `--purge`. It writes a timestamped backup archive
+first and prints the path, then asks you to type `PURGE` to confirm.
+
+Docker is never removed automatically; other things on the machine may be using
+it. The uninstaller prints the commands if you want it gone.
 
 ## Data ownership and safety
 
