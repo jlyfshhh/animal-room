@@ -10,8 +10,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Syntax
-        run: bash -n install.sh uninstall.sh tests/install.sh tests/uninstall.sh
+        run: bash -n install.sh uninstall.sh doctor.sh tests/install.sh tests/uninstall.sh tests/doctor.sh
       - name: Selection behavior
         run: bash tests/install.sh
       - name: Uninstaller behavior
         run: bash tests/uninstall.sh
+      - name: Diagnostics leak nothing
+        run: bash tests/doctor.sh

@@ -7,6 +7,7 @@ on:
       - "site/**"
       - "install.sh"
       - "uninstall.sh"
+      - "doctor.sh"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -35,6 +36,7 @@ jobs:
         run: |
           cp install.sh site/install.sh
           cp uninstall.sh site/uninstall.sh
+          cp doctor.sh site/doctor.sh
       - uses: actions/upload-pages-artifact@v4
         with:
           path: site

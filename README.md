@@ -37,8 +37,8 @@ other one and enable Haven. No data is replaced.
 
 | | Bask alone | Shed alone | Haven (both) |
 |---|---|---|---|
-| Memory | 512 MB | 1 GB | 2 GB |
-| Comfortable on | Pi Zero 2 W, Pi 3 | Pi 3, Pi 4 | Pi 4, Pi 5 |
+| Memory | 512 MB | **1 GB** | 2 GB |
+| Comfortable on | Pi Zero 2 W, Pi 3 | Pi 3 (1 GB+), Pi 4 | Pi 4, Pi 5 |
 
 Both need a 64-bit OS and a few GB of free disk.
 
@@ -47,9 +47,12 @@ multi-architecture images, so installing downloads a container and starts it —
 your board only ever has to *run* the apps, not build them. Measured while
 running: Bask about 130 MB, Shed about 300 MB.
 
-A Pi Zero 2 W has 512 MB, which is comfortable for Bask, workable for Shed on
-its own, and not enough for both at once. If you want the pair, use a board with
-2 GB.
+Measured on arm64, Shed's worker peaks near **390 MB** while starting. A Pi
+Zero 2 W has 512 MB in total, so once the OS has taken its share there is not
+enough left — and if the board is already doing another job, less still. Shed
+gets killed part way through starting, which looks exactly like a successful
+install whose address then refuses to load. **A Pi Zero 2 W is a Bask board.**
+Give Shed 1 GB, and the pair 2 GB.
 
 You can also start with one app and add the other later; the installer will not
 disturb what is already there.
@@ -106,6 +109,22 @@ Run the Haven installer with the same install root. Existing databases,
 settings, and backups remain in place. Bask also safely migrates its former
 systemd/virtualenv installation when it detects one, including a timestamped
 pre-migration SQLite snapshot.
+
+## Something not working?
+
+```bash
+curl -fsSL https://animalroom.app/doctor.sh | bash
+```
+
+Prints a report of what is installed, what is running, how much memory the board
+has, whether a container was killed, and any recent error lines — then you can
+paste the whole thing to whoever is helping.
+
+It reads state only and changes nothing. It does **not** collect your settings
+file, any access code or token, your animals' records, your database, or your
+public IP address: secret settings are listed by name with "set" or "empty"
+instead of a value, routine log lines are dropped, and anything token-shaped or
+reading-shaped is filtered out. Read it before you send it if you like.
 
 ## Uninstalling
 
