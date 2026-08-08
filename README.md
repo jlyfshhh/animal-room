@@ -35,23 +35,24 @@ other one and enable Haven. No data is replaced.
 
 ## What you need
 
-| | Bask | Shed |
-|---|---|---|
-| Memory | 512 MB works | **2 GB or more** |
-| Known good | Pi Zero 2 W, Pi 3, Pi 4, Pi 5 | Pi 4, Pi 5 |
-| Not enough | — | Pi Zero / Zero 2 W, Pi 3 with 1 GB |
+| | Bask alone | Shed alone | Haven (both) |
+|---|---|---|---|
+| Memory | 512 MB | 1 GB | 2 GB |
+| Comfortable on | Pi Zero 2 W, Pi 3 | Pi 3, Pi 4 | Pi 4, Pi 5 |
 
 Both need a 64-bit OS and a few GB of free disk.
 
-**Bask is light** — Python, no build step — and is happy on the smallest boards.
-**Shed compiles its web interface on the machine you install it on**, and that
-build is the demanding part. On a board with under 2 GB the build runs out of
-memory and the install fails or never finishes, even though Bask on the same
-board is fine.
+Nothing is compiled during installation. Both apps are published as prebuilt
+multi-architecture images, so installing downloads a container and starts it —
+your board only ever has to *run* the apps, not build them. Measured while
+running: Bask about 130 MB, Shed about 300 MB.
 
-If that is where you are: install Bask now and add Shed later on a bigger board.
-The installer is happy to do one and not the other, and adding the second one
-later is not a reinstall of the first.
+A Pi Zero 2 W has 512 MB, which is comfortable for Bask, workable for Shed on
+its own, and not enough for both at once. If you want the pair, use a board with
+2 GB.
+
+You can also start with one app and add the other later; the installer will not
+disturb what is already there.
 
 ## Install
 
