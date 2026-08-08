@@ -197,14 +197,34 @@ if [[ "$select_haven" == true ]]; then
 fi
 
 host="$(hostname)"
+# A .local name needs mDNS, which Windows without Bonjour and a good number of
+# Android phones do not do — the address simply refuses to load, with nothing to
+# say why. The LAN address always works, so lead with it and offer the friendly
+# name second.
+lan_ip="$(ip -4 -o addr show scope global 2>/dev/null | awk '$2 !~ /^(docker|br-|veth|virbr|tun|tap)/ {print $4}' | cut -d/ -f1 \
+  | grep -E '^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)' | head -n 1)"
+address() {
+  local port="$1" path="${2:-}"
+  if [[ -n "$lan_ip" ]]; then
+    printf 'http://%s:%s%s\n' "$lan_ip" "$port" "$path"
+    printf '                    or http://%s.local:%s%s\n' "$host" "$port" "$path"
+  else
+    printf 'http://%s.local:%s%s\n' "$host" "$port" "$path"
+  fi
+}
 cat <<SUMMARY
 
 Installation complete.
 
-$( [[ "$select_bask" != true ]] || printf '  Bask:    http://%s.local:8080\n' "$host" )
-$( [[ "$select_shed" != true ]] || printf '  Shed:    http://%s.local:3000\n' "$host" )
-$( [[ "$select_haven" != true ]] || printf '  Haven:   http://%s.local:8080/room.html\n' "$host" )
+Open these from any phone or computer on the same network:
+
+$( [[ "$select_bask" != true ]] || printf '  Bask:    %s' "$(address 8080)" )
+$( [[ "$select_shed" != true ]] || printf '  Shed:    %s' "$(address 3000)" )
+$( [[ "$select_haven" != true ]] || printf '  Haven:   %s' "$(address 8080 /room.html)" )
 
 Each app keeps its own database and settings in its data directory.
 Run this same installer again to update the selected apps without replacing data.
+
+If an address will not load, run this and send us what it prints:
+  curl -fsSL https://animalroom.app/doctor.sh | bash
 SUMMARY

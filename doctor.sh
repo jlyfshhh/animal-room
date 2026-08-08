@@ -204,7 +204,7 @@ done
 section "Reaching the apps"
 item "hostname" "$(hostname)"
 # Private LAN addresses only. A public address is identifying, so it is skipped.
-lan=$(ip -4 -o addr show scope global 2>/dev/null | awk '{print $4}' | cut -d/ -f1 \
+lan=$(ip -4 -o addr show scope global 2>/dev/null | awk '$2 !~ /^(docker|br-|veth|virbr|tun|tap)/ {print $4}' | cut -d/ -f1 \
       | grep -E '^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)' | tr '\n' ' ')
 item "LAN address(es)" "${lan:-none found (private ranges only)}"
 if command -v ss >/dev/null 2>&1; then
