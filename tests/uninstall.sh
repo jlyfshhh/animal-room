@@ -17,7 +17,9 @@ seed_root() {
     printf 'records\n' >"$target/$app/data/db.sqlite"
     printf 'old\n' >"$target/$app/backups/old.tar.gz"
     printf 'SECRET=abc\n' >"$target/$app/.env"
-    printf 'services:\n' >"$target/$app/compose.yaml"
+    # A real compose file: on a runner that has Docker, the uninstaller will
+    # actually parse this, and `services:` with nothing under it is invalid.
+    printf 'services:\n  %s:\n    image: busybox\n' "$app" >"$target/$app/compose.yaml"
     printf 'readme\n' >"$target/$app/README.md"
     printf 'config\n' >"$target/$app/.git/config"
   done

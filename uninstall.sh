@@ -168,6 +168,27 @@ for app in "${selected_apps[@]}"; do
 
   if ((${#docker_cmd[@]})); then
     if [[ -f "$dir/compose.yaml" || -f "$dir/docker-compose.yml" ]]; then
+      # Compose names a project after its directory, so any other project on
+      # this machine that also lives in a folder called "shed" answers to the
+      # same name — and `down` would stop that one instead. Check that the
+      # containers claiming this project name really came from this directory.
+      canonical_dir="$(cd "$dir" && pwd -P)"
+      foreign=false
+      while IFS= read -r working_dir; do
+        [[ -z "$working_dir" ]] && continue
+        [[ "$working_dir" == "$canonical_dir" ]] || foreign=true
+      done < <("${docker_cmd[@]}" ps -aq --filter "label=com.docker.compose.project=$app" 2>/dev/null \
+        | while IFS= read -r cid; do
+            [[ -n "$cid" ]] && "${docker_cmd[@]}" inspect "$cid" \
+              --format '{{index .Config.Labels "com.docker.compose.project.working_dir"}}' 2>/dev/null
+          done | sort -u)
+
+      if [[ "$foreign" == true ]]; then
+        warn "A different Docker project is also called \"$app\" on this machine.
+     Leaving its containers alone. Remove $dir by hand if you are sure."
+        continue
+      fi
+
       # Ask this project which images it actually built before tearing it down.
       # Deriving the name instead (app-app) is a guess that can match an
       # unrelated image and delete it.
