@@ -119,6 +119,14 @@ settings, and backups remain in place. Bask also safely migrates its former
 systemd/virtualenv installation when it detects one, including a timestamped
 pre-migration SQLite snapshot.
 
+Before installing Shed, the unified installer checks that the host has its
+1&nbsp;GB minimum; Bask remains available by itself on a 512&nbsp;MB board. After
+an install or update it waits for each selected app's health endpoint, and a
+Haven install additionally verifies that Bask can read Shed's display feed. If
+startup, memory, or that connection check fails, the installer restores the
+previous Compose settings and running image while leaving every `data` and
+`backups` directory alone.
+
 ## Something not working?
 
 ```bash
