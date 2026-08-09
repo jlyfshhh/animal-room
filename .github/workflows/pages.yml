@@ -20,6 +20,18 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
+# Security headers, and why none are set here: GitHub Pages serves the uploaded
+# artefact as-is and offers no way to add response headers — no config file, no
+# option on this action, nothing. So Content-Security-Policy and Referrer-Policy
+# are declared inside each page instead (<meta http-equiv> / <meta name>), which
+# browsers honour. What cannot be delivered that way, and is therefore genuinely
+# absent: X-Content-Type-Options: nosniff, X-Frame-Options / CSP frame-ancestors,
+# Strict-Transport-Security, and Permissions-Policy. Pages also sends
+# `access-control-allow-origin: *` on every file and that is not ours to change.
+# The pages are static marketing copy with no accounts, forms, scripts, or
+# secrets, so the residual risk is small — but it is real, and moving the site
+# behind a host that supports headers is the only way to close it.
+
 jobs:
   deploy:
     environment:

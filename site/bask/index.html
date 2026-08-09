@@ -7,6 +7,15 @@
 <meta name="description" content="Bask is a free, self-hosted Docker dashboard for reptile & amphibian keepers. It reads Govee sensors over Bluetooth and shows a big green 'all good' — or a clear alert. One-line Raspberry Pi install, no account.">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 
+<!-- GitHub Pages serves static files and cannot send custom response headers,
+     so the protection that can travel inside the page does. This page loads
+     nothing but its own images and its own inline styling, so everything else —
+     scripts, third-party requests, form submissions — is denied outright. Note
+     that frame-ancestors and X-Content-Type-Options are header-only: a browser
+     ignores them here, and Pages will not send them. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+
 <!-- Social / link previews -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="Bask — know your animal room is okay, at a glance">
@@ -149,10 +158,12 @@
       <a class="btn btn-primary" href="#start">☀️ Get started</a>
       <a class="btn btn-ghost" href="https://github.com/jlyfshhh/bask">View on GitHub</a>
     </div>
-    <div class="hero-note">No cloud · no account · no monthly fee · your data stays in your home</div>
+    <div class="hero-note">No cloud account · no monthly fee · your data stays in your home</div>
 
     <div class="mock">
-      <div class="mock-bar"><i></i><i></i><i></i><span class="mock-url">bask.local</span></div>
+      <!-- The numeric address is what the installer prints and what always
+           works, so the mock-up shows that rather than a .local name. -->
+      <div class="mock-bar"><i></i><i></i><i></i><span class="mock-url">192.168.1.50:8080</span></div>
       <img src="dashboard.svg" alt="The Bask dashboard showing enclosures with temperature and humidity, most green and one flagged">
     </div>
   </div>
@@ -183,7 +194,7 @@
       <div class="feat"><div class="ico">🔋</div><h3>Battery &amp; signal alerts</h3><p>Warns you before a sensor’s battery dies or drops off — so you’re never blind without knowing it.</p></div>
       <div class="feat"><div class="ico">📲</div><h3>Pings your phone</h3><p>Optional phone alerts the moment an enclosure needs attention — even when you’re away from home. Two-minute setup.</p></div>
       <div class="feat"><div class="ico">📱</div><h3>Installs like an app</h3><p>Add it to your phone or tablet’s home screen — its own icon, opens fullscreen. No app store needed.</p></div>
-      <div class="feat"><div class="ico">🔒</div><h3>Private by design</h3><p>Runs entirely in your home on a tiny computer. Nothing is sent to the cloud. No subscription, ever.</p></div>
+      <div class="feat"><div class="ico">🔒</div><h3>Private by design</h3><p>Runs on a tiny computer in your home, with no vendor account to sign up for. Monitoring sends nothing out; optional extras like phone alerts reach only the service you pick. No subscription, ever.</p></div>
     </div>
   </div>
 </section>
@@ -196,7 +207,7 @@
       <p>A one-time setup with inexpensive, easy-to-find parts. No soldering, no wiring.</p>
     </div>
     <div class="grid">
-      <div class="feat"><div class="ico">🥧</div><h3>A Raspberry Pi</h3><p>Any supported 64-bit model running Raspberry Pi OS — use the SD card that came with it if it already boots. A Pi 4 is an easy pick; a Zero 2 W is the tiniest.</p></div>
+      <div class="feat"><div class="ico">🥧</div><h3>A Raspberry Pi</h3><p>Any supported 64-bit model running Raspberry Pi OS — use the SD card that came with it if it already boots. Bask runs in about 130&nbsp;MB, so <b>512&nbsp;MB</b> is enough and even a Pi Zero 2 W is comfortable. A Pi 4 is the easy pick if you may add <a href="/shed/">Shed</a> later, which wants 1&nbsp;GB of its own.</p></div>
       <div class="feat"><div class="ico">🌡️</div><h3>Govee H5075 sensors</h3><p>One small thermo-hygrometer in each enclosure you want to watch. Affordable and widely available.</p></div>
       <div class="feat"><div class="ico">📱</div><h3>Any screen</h3><p>View it on your phone, a tablet, an old monitor, or a smart display — anything with a web browser on your Wi-Fi.</p></div>
     </div>
@@ -224,11 +235,12 @@
       </div></div>
       <div class="step"><div class="n">3</div><div>
         <h3>Paste one line</h3>
-        <p>The installer prepares Docker and Bluetooth, downloads Bask, and sets it to start automatically on every boot.</p>
+        <p>The installer prepares Docker and Bluetooth, downloads the prebuilt Bask image, and sets it to start automatically on every boot. Nothing is compiled on the Pi, so this is a download rather than a long wait.</p>
       </div></div>
       <div class="step"><div class="n">4</div><div>
         <h3>Open it &amp; add your sensors</h3>
-        <p>On any device on your Wi-Fi, open <span class="url">http://bask.local:8080</span>. Tap <b>⚙ Manage → Pair by proximity</b>, hold a Govee sensor near the Pi, and assign it to an enclosure. Done!</p>
+        <p>The installer finishes by printing the address, a numeric one like <span class="url">http://192.168.1.50:8080</span>. Open that on any device on your Wi-Fi, tap <b>⚙ Manage → Pair by proximity</b>, hold a Govee sensor near the Pi, and assign it to an enclosure. Done!</p>
+        <p>The installer also offers a <code>.local</code> name as an alternative. It is easier to remember, but it only works on devices that support mDNS — which Windows without Bonjour, and a good many Android phones, do not. If it will not load, use the numeric address.</p>
       </div></div>
     </div>
 
@@ -253,7 +265,7 @@
       <details><summary>Do I need to be techy?</summary><p>No. Start Raspberry Pi OS, open Terminal, and paste one line. The installer handles Docker, Bluetooth, persistent storage, and automatic startup. The beginner guide explains both the on-screen and remote-SSH routes.</p></details>
       <details><summary>Will it work for my animals?</summary><p>Bask works for any keeper using Govee H5075 sensors. It ships with starting temperature and humidity ranges for several common reptiles, and you can adjust every number to match your species and your room. <b>It’s a monitoring aid, not veterinary advice</b> — always verify against trusted care resources.</p></details>
       <details><summary>Is my information private?</summary><p>Yes. Sensor readings, enclosure settings, and history stay on your own Raspberry Pi. Core monitoring needs no account or cloud. Optional integrations such as ntfy alerts or Cielo room climate contact only the service you choose to connect.</p></details>
-      <details><summary>How do updates work?</summary><p>Run the same one-line installer again. It fetches the current code and rebuilds the Bask container without replacing your persistent settings or history. The Settings screen also provides a portable backup download.</p></details>
+      <details><summary>How do updates work?</summary><p>Run the same one-line installer again. It downloads the current prebuilt image and restarts Bask on it, without replacing your settings or history. Nothing is compiled on your Pi, so an update is a download rather than a long rebuild. The Settings screen also provides a portable backup download.</p></details>
       <details><summary>It installed, but the address will not load</summary><p>Two things cause almost all of these. First, the address: use the <b>numeric</b> one the installer printed, like <code>http://192.168.1.50:8080</code>. A <code>.local</code> address only works on devices that support it, which Windows and many Android phones do not. Second, memory — if the board ran out while starting, the app is killed and the address simply refuses to load.</p><p>This reports both, plus anything else useful, and you can paste the result to whoever is helping:</p><p><code>curl -fsSL https://animalroom.app/doctor.sh | bash</code></p><p>It only reads your system and changes nothing. It contains no records, passwords, or access codes — settings are listed by name only, never by value.</p></details>
           <details><summary>Can I show it on a wall display?</summary><p>Yes. Open it on a cheap wall-mounted tablet, an old phone, a monitor, or a smart display like an Amazon Echo Show — anything with a web browser on your network.</p></details>
     </div>

@@ -81,11 +81,20 @@ Haven. Re-running the command updates the selected apps without replacing data.
 
 ## Addresses and storage
 
+The installer finishes by printing the address for each app it set up. Use the
+**numeric** one — `http://192.168.1.50:3000`, with your board's own address.
+It works from every phone and computer on the network.
+
 | Surface | Address | Persistent data |
 |---|---|---|
-| Bask | `http://HOSTNAME.local:8080` | `~/bask/data` |
-| Shed | `http://HOSTNAME.local:3000` | `~/shed/data` |
-| Haven room display | `http://HOSTNAME.local:8080/room.html` | Reads Bask and Shed; stores no separate copy |
+| Bask | `http://LAN-ADDRESS:8080` | `~/bask/data` |
+| Shed | `http://LAN-ADDRESS:3000` | `~/shed/data` |
+| Haven room display | `http://LAN-ADDRESS:8080/room.html` | Reads Bask and Shed; stores no separate copy |
+
+The installer also offers `http://HOSTNAME.local:PORT` as an alternative. It is
+easier to remember, but it needs mDNS, which Windows without Bonjour and a good
+many Android phones do not do — there the address simply refuses to load, with
+nothing on screen to say why. Treat it as a convenience, not the way in.
 
 Set `ANIMAL_ROOM_HOME` or pass `--install-root PATH` to choose a different
 parent directory.
@@ -145,7 +154,8 @@ curl -fsSL https://animalroom.app/uninstall.sh | bash -s -- --shed
 the installer.
 
 To remove one app and keep the other — for example dropping Shed from a board
-that cannot build it, while Bask keeps running — uninstall just that one.
+that does not have the memory to run it, while Bask keeps running — uninstall
+just that one.
 
 To erase the records too, add `--purge`. It writes a timestamped backup archive
 first and prints the path, then asks you to type `PURGE` to confirm.
@@ -171,3 +181,16 @@ it. The uninstaller prints the commands if you want it gone.
 This repository also holds the site served at **animalroom.app**. The landing
 pages for Shed and Bask live in `site/shed/` and `site/bask/` here — not in
 their own repositories, which keep only a redirect.
+
+## Versions and license
+
+There is nothing to version here in the usual sense: `install.sh`,
+`uninstall.sh`, `doctor.sh`, and the site are published from `main` by the Pages
+workflow, so the copy you download is always the current one. Re-running the
+installer is how you update. Bask and Shed each carry their own version, set in
+their own repositories, and `doctor.sh` prints which images are actually
+installed.
+
+Everything in this repository is MIT licensed — see [LICENSE](LICENSE). Bask and
+Shed are MIT licensed in their own repositories, which is the license the site
+refers to on each page.
