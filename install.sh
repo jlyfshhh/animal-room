@@ -142,6 +142,19 @@ fi
 sudo systemctl enable --now docker >/dev/null 2>&1 || true
 sudo usermod -aG docker "$(id -un)" || true
 
+# Group membership granted above does not apply to this shell — it takes effect
+# at the next login. So probe what actually works right now and use that for
+# everything below. Bare `docker compose` here failed on exactly the install
+# this is meant to serve: a fresh machine where the installer had just added
+# Docker and the user was not yet in the group.
+if docker info >/dev/null 2>&1; then
+  DOCKER=(docker)
+elif sudo -n docker info >/dev/null 2>&1 || sudo docker info >/dev/null 2>&1; then
+  DOCKER=(sudo docker)
+else
+  die "Docker is installed but not reachable. Log out and back in, then run this again."
+fi
+
 run_remote_installer() {
   local app="$1" url="$2" variable="$3" destination="$4"
   say "Installing $app"
@@ -184,7 +197,7 @@ if [[ "$select_haven" == true ]]; then
   if [[ -z "$display_token" || "$display_token" == replace-with-* ]]; then
     display_token="$(openssl rand -hex 24 2>/dev/null || head -c 48 /dev/urandom | od -An -tx1 | tr -d ' \n')"
     set_env_value "$shed_env" "SHED_DISPLAY_TOKEN" "$display_token"
-    (cd "$install_root/shed" && docker compose up -d)
+    (cd "$install_root/shed" && "${DOCKER[@]}" compose up -d)
   fi
 
   # Both containers run on the same host. Bask reads this feed server-side, so
@@ -193,7 +206,7 @@ if [[ "$select_haven" == true ]]; then
   shed_port="${shed_port:-3000}"
   set_env_value "$bask_env" "SHED_DISPLAY_URL" "http://host.docker.internal:${shed_port}/api/display"
   set_env_value "$bask_env" "SHED_DISPLAY_TOKEN" "$display_token"
-  (cd "$install_root/bask" && docker compose up -d --build)
+  (cd "$install_root/bask" && "${DOCKER[@]}" compose pull -q && "${DOCKER[@]}" compose up -d)
 fi
 
 host="$(hostname)"
