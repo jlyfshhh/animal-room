@@ -1,0 +1,140 @@
+#!/usr/bin/env bash
+# Back up every installed Animal Room app to a separate device.
+#
+# Each app is handled independently. One app failing — or having been
+# uninstalled — must never stop the others from being backed up or stop old
+# archives from being cleaned up, which is exactly what went wrong when Clarity
+# was archived: the job died on a missing directory, and retention had not run
+# since, so the backup device was filling.
+set -uo pipefail
+umask 077
+
+backup_root="${ANIMAL_BACKUP_ROOT:-/srv/sd-backup/var/backups/animal-apps}"
+install_root="${ANIMAL_ROOM_HOME:-/home/cc}"
+retention_days="${ANIMAL_BACKUP_KEEP:-30}"
+status_file="${ANIMAL_BACKUP_STATUS:-$backup_root/status.json}"
+stamp="$(date +%Y%m%d-%H%M%S)"
+
+# Apps to try. Absent ones are skipped, not failed: uninstalling an app is a
+# normal thing to do and should not page anyone at 3am.
+apps="${ANIMAL_BACKUP_APPS:-bask shed}"
+
+failures=()
+succeeded=()
+
+note() { printf '%s\n' "$*"; }
+fail() { printf 'ERROR: %s\n' "$*" >&2; }
+
+require_mount() {
+  # Writing "backups" onto the same failing SD card the apps live on is not a
+  # backup. If the destination is meant to be a mount and is not mounted, stop.
+  if [ -n "${ANIMAL_BACKUP_REQUIRE_MOUNT:-}" ]; then
+    mountpoint -q "$ANIMAL_BACKUP_REQUIRE_MOUNT" || {
+      fail "$ANIMAL_BACKUP_REQUIRE_MOUNT is not mounted; refusing to write backups to the wrong device."
+      exit 1
+    }
+  fi
+}
+
+backup_bask() {
+  local dir="$install_root/bask"
+  [ -d "$dir" ] || return 2
+  mkdir -p "$backup_root/bask"
+  BASK_BACKUP_PATH="$backup_root/bask" "$dir/scripts/backup.sh" >/dev/null
+}
+
+backup_shed() {
+  local dir="$install_root/shed"
+  [ -d "$dir" ] || return 2
+  mkdir -p "$backup_root/shed"
+  # Shed's own script picks the live database, takes a consistent copy through
+  # SQLite's backup API, verifies it, and handles retention. Do not reimplement
+  # any of that here.
+  SHED_INSTALL_DIR="$dir" SHED_BACKUP_PATH="$backup_root/shed" \
+    SHED_BACKUP_KEEP="$retention_days" "$dir/scripts/backup.sh" >/dev/null
+  # The settings file is not in the database and is needed to restore. Written
+  # as `if`: a trailing `[ -f x ] && ...` makes the function return 1 when the
+  # file is absent, reporting a perfectly good backup as a failure.
+  if [ -f "$dir/.env" ]; then
+    install -m 600 "$dir/.env" "$backup_root/shed/shed-$stamp.env"
+  fi
+  return 0
+}
+
+require_mount
+
+for app in $apps; do
+  if ! declare -F "backup_$app" >/dev/null; then
+    fail "no backup routine for '$app'"
+    failures+=("$app: unknown app")
+    continue
+  fi
+  set +e
+  "backup_$app"
+  code=$?
+  set -e
+  case "$code" in
+    0) succeeded+=("$app"); note "backed up $app" ;;
+    2) note "skipping $app — not installed at $install_root/$app" ;;
+    *) fail "$app backup failed (exit $code)"; failures+=("$app: exit $code") ;;
+  esac
+done
+
+# Retention runs whatever happened above. Each app keeps its most recent
+# archive regardless of age, so a machine that has been off for months still
+# has something to restore from.
+prune() {
+  local dir="$1" pattern="$2" newest
+  [ -d "$dir" ] || return 0
+  newest="$(ls -1t "$dir"/$pattern 2>/dev/null | head -n 1 || true)"
+  while IFS= read -r old; do
+    if [ -n "$old" ] && [ "$old" != "$newest" ]; then
+      rm -f "$old" || fail "could not remove $old"
+    fi
+  done < <(find "$dir" -maxdepth 1 -type f -name "$pattern" -mtime "+$retention_days" 2>/dev/null)
+}
+
+for app in $apps; do
+  prune "$backup_root/$app" "*.sqlite"
+  prune "$backup_root/$app" "*.tar.gz"
+  prune "$backup_root/$app" "*.env"
+done
+
+# An operator-visible record, so "is the backup working?" has an answer that
+# does not involve reading journald. No private data: paths, counts, and sizes.
+{
+  printf '{\n'
+  printf '  "ran_at": "%s",\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  printf '  "succeeded": ['
+  for i in "${!succeeded[@]}"; do
+    [ "$i" -gt 0 ] && printf ', '
+    printf '"%s"' "${succeeded[$i]}"
+  done
+  printf '],\n'
+  printf '  "failed": ['
+  for i in "${!failures[@]}"; do
+    [ "$i" -gt 0 ] && printf ', '
+    printf '"%s"' "${failures[$i]}"
+  done
+  printf '],\n'
+  printf '  "free_kb": %s,\n' "$(df -Pk "$backup_root" 2>/dev/null | awk 'NR==2{print $4}')"
+  printf '  "apps": {\n'
+  first=true
+  for app in $apps; do
+    dir="$backup_root/$app"
+    [ -d "$dir" ] || continue
+    [ "$first" = true ] || printf ',\n'
+    first=false
+    latest="$(ls -1t "$dir" 2>/dev/null | head -n 1 || true)"
+    count="$(find "$dir" -maxdepth 1 -type f 2>/dev/null | wc -l | tr -d ' ')"
+    printf '    "%s": {"latest": "%s", "archives": %s}' "$app" "$latest" "$count"
+  done
+  printf '\n  }\n}\n'
+} > "$status_file.tmp" && mv -f "$status_file.tmp" "$status_file"
+chmod 644 "$status_file" 2>/dev/null || true
+
+if [ "${#failures[@]}" -gt 0 ]; then
+  fail "${#failures[@]} app(s) failed: ${failures[*]}"
+  exit 1
+fi
+note "all backups complete; status written to $status_file"

@@ -200,6 +200,47 @@ for app in shed bask; do
   fi
 done
 
+# ── Backups ──────────────────────────────────────────────────────────────────
+# "Is the backup working?" should have an answer that does not involve reading
+# journald. The scheduled job writes this after every run, failures included.
+section "Backups"
+backup_status="${ANIMAL_BACKUP_STATUS:-/srv/sd-backup/var/backups/animal-apps/status.json}"
+if [[ -r "$backup_status" ]]; then
+  item "status file" "$backup_status"
+  if command -v python3 >/dev/null 2>&1; then
+    python3 - "$backup_status" <<'PYSTATUS'
+import json, sys, time, datetime
+try:
+    with open(sys.argv[1]) as handle:
+        data = json.load(handle)
+except Exception as exc:
+    print(f"  could not read the status file: {exc}")
+    raise SystemExit(0)
+ran = data.get("ran_at", "")
+age = ""
+try:
+    when = datetime.datetime.strptime(ran, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc)
+    hours = (datetime.datetime.now(datetime.timezone.utc) - when).total_seconds() / 3600
+    age = f" ({hours:.0f}h ago)"
+    if hours > 48:
+        age += "  ** no successful run in over two days"
+except Exception:
+    pass
+print(f"  {'last run':<22} {ran}{age}")
+print(f"  {'succeeded':<22} {', '.join(data.get('succeeded') or []) or 'none'}")
+failed = data.get("failed") or []
+print(f"  {'failed':<22} {', '.join(failed) if failed else 'none'}")
+free = data.get("free_kb")
+if isinstance(free, int):
+    print(f"  {'free on backup device':<22} {free // 1024} MB")
+for app, info in (data.get("apps") or {}).items():
+    print(f"  {app + ' latest':<22} {info.get('latest')} ({info.get('archives')} archives)")
+PYSTATUS
+  fi
+else
+  item "status file" "not found — the scheduled backup may never have run"
+fi
+
 # ── Reaching it ──────────────────────────────────────────────────────────────
 section "Reaching the apps"
 item "hostname" "$(hostname)"
