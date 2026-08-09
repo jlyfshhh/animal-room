@@ -199,10 +199,12 @@ for app in shed bask; do
     # Only lines that describe a problem or a startup event. Routine logs name
     # every sensor, and sensors are named after animals — that is the keeper's
     # data, it is useless for debugging, and it should not travel.
+    # Word boundaries, not substrings: the previous pattern's `OOM` matched the
+    # `oom` inside `room-dashboard`, so routine access logs — which carry animal
+    # names in their query strings — passed a filter meant to exclude them.
+    # (The comment lives here, not inside the pipeline: a comment between a
+    # trailing backslash and the next segment is a syntax error in bash 5.)
     log_lines=$("${docker_cmd[@]}" logs --tail 400 "$app" 2>&1 \
-      # Word boundaries, not substrings: the previous pattern's `OOM` matched the
-      # `oom` inside `room-dashboard`, so routine access logs — which carry animal
-      # names in their query strings — passed a filter meant to exclude them.
       | grep -iE '(^|[^a-z])(error|warn|warning|fatal|critical|exception|traceback|refused|denied|permission|cannot|could not|unable|failed|not found|no such|address already|EADDR[A-Z]*|panic|unhandled|out of memory|oom-killer|oom_kill|killed|segfault)([^a-z]|$)' \
       | tail -20 | redact | scrub_readings)
     if [[ -n "$log_lines" ]]; then
