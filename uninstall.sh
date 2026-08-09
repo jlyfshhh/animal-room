@@ -130,31 +130,118 @@ fi
 
 if [[ "$assume_yes" != true && "$dry_run" != true ]]; then
   [[ -r /dev/tty ]] || die "No terminal to confirm at. Pass --yes if you are sure."
-  if [[ "$purge" == true ]]; then
-    printf '\nThis permanently erases your records. Type PURGE to continue: ' >/dev/tty
-    IFS= read -r reply </dev/tty
-    [[ "$reply" == "PURGE" ]] || die "Cancelled. Nothing was changed."
-  else
-    printf '\nContinue? [y/N] ' >/dev/tty
-    IFS= read -r reply </dev/tty
-    [[ "$reply" == [yY]* ]] || die "Cancelled. Nothing was changed."
-  fi
+  printf '\nContinue? [y/N] ' >/dev/tty
+  IFS= read -r reply </dev/tty
+  [[ "$reply" == [yY]* ]] || die "Cancelled. Nothing was changed."
 fi
 
+# The irreversible answer is taken per app, after its archive exists and has
+# been verified, so the keeper is agreeing to delete records that demonstrably
+# have a backup rather than to a promise that one will be made.
+confirm_purge() {
+  local app="$1"
+  [[ "$assume_yes" == true ]] && return 0
+  [[ -r /dev/tty ]] || die "No terminal to confirm at. Pass --yes if you are sure."
+  printf '\nThe backup above is the only remaining copy of %s.\nType PURGE to delete the records: ' "$app" >/dev/tty
+  local reply
+  IFS= read -r reply </dev/tty
+  [[ "$reply" == "PURGE" ]] || die "Cancelled. $app was not deleted."
+}
+
+# Builds a verified archive of one app and echoes its path. Returns non-zero if
+# anything at all went wrong — the caller must treat that as "do not delete".
+#
+# The containers run as root, so parts of a live data directory are owned by
+# root and unreadable to the invoking user. An earlier version ran tar as the
+# user, sent its errors to /dev/null, and treated failure as "nothing to back
+# up" — then the caller deleted the records anyway. Everything here exists to
+# make that impossible.
 backup_app() {
   local app="$1" dir="$2"
-  local stamp dest
+  local stamp dest members=() runner=()
   stamp="$(date +%Y%m%d-%H%M%S)"
   dest="$install_root/${app}-backup-${stamp}.tar.gz"
-  # The archive can contain .env, which holds access tokens and — for Bask —
-  # third-party account credentials. tar obeys the umask, so set it first
-  # rather than chmod'ing a file that was briefly world-readable.
-  ( umask 077
-    tar -C "$dir" -czf "$dest" data 2>/dev/null ) || {
-      warn "Nothing at $dir/data to back up."
-      return 0
+
+  # Settings belong in the archive: without .env a restored install has no
+  # access codes or integration credentials. The nearby comment used to claim
+  # this while the code archived only data.
+  # -e alone is false for a dangling symlink, which would quietly drop data from
+  # the archive and then let the deletion proceed. If the path exists in any
+  # form it must end up in the archive or the backup fails.
+  [[ -e "$dir/data" || -L "$dir/data" ]] && members+=(data)
+  [[ -e "$dir/.env" || -L "$dir/.env" ]] && members+=(.env)
+  if ((${#members[@]} == 0)); then
+    warn "$dir has neither data nor settings to archive."
+    return 1
+  fi
+
+  # Read the files the same way the rest of the script reaches Docker.
+  if [[ "${docker_cmd[0]:-}" == "sudo" ]] || ! tar -C "$dir" -cf /dev/null "${members[@]}" 2>/dev/null; then
+    if command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+      runner=(sudo)
+    elif command -v sudo >/dev/null 2>&1 && [[ -r /dev/tty ]]; then
+      say "Reading $app's files needs administrator access."
+      sudo -v && runner=(sudo)
+    fi
+  fi
+
+  # tar obeys the umask, so set it before creating rather than chmod'ing a file
+  # that was briefly world-readable.
+  local status=0
+  # -h dereferences: keepers do symlink data onto a larger disk, and without
+  # this the archive would contain the link rather than the records. It also
+  # makes a broken link a hard failure instead of a convincing-looking archive.
+  ( umask 077; ${runner[@]+"${runner[@]}"} tar -h -C "$dir" -czf "$dest" "${members[@]}" ) || status=$?
+  if ((status != 0)); then
+    warn "Could not archive $dir (tar exited $status). Nothing has been deleted."
+    ${runner[@]+"${runner[@]}"} rm -f "$dest" 2>/dev/null || true
+    return 1
+  fi
+
+  # sudo-created archives belong to root; hand them back so the keeper can read
+  # their own backup.
+  if ((${#runner[@]})); then
+    sudo chown "$(id -u):$(id -g)" "$dest" 2>/dev/null || true
+  fi
+  chmod 600 "$dest" 2>/dev/null || true
+
+  # An archive nobody has verified is not a backup. Check it opens, that it
+  # actually contains what was asked for, and that it is not a stub.
+  local listing
+  listing="$(tar -tzf "$dest" 2>/dev/null)" || {
+    warn "The archive at $dest cannot be read back. Nothing has been deleted."
+    rm -f "$dest"
+    return 1
+  }
+  local member
+  for member in "${members[@]}"; do
+    grep -qE "^\.?/?${member}(/|\$)" <<<"$listing" || {
+      warn "The archive is missing $member. Nothing has been deleted."
+      rm -f "$dest"
+      return 1
     }
-  printf '  backup: %s\n' "$dest"
+  done
+  # A bare `data` entry is what an unfollowed symlink leaves behind. With -h
+  # above this should be unreachable, and no test can currently trigger it —
+  # it is kept because tar implementations differ on dereferencing, and the
+  # cost of being wrong is a convincing archive that restores nothing.
+  if [[ -d "$dir/data" ]] && [[ -n "$(ls -A "$dir/data" 2>/dev/null)" ]]; then
+    grep -qE '^\.?/?data/.' <<<"$listing" || {
+      warn "The archive lists data but none of its contents. Nothing has been deleted."
+      rm -f "$dest"
+      return 1
+    }
+  fi
+  local size
+  size=$(wc -c <"$dest" 2>/dev/null || echo 0)
+  if (( size < 100 )); then
+    warn "The archive at $dest is implausibly small ($size bytes). Nothing has been deleted."
+    rm -f "$dest"
+    return 1
+  fi
+
+  printf '  verified backup: %s (%s entries, %s bytes)\n' "$dest" "$(wc -l <<<"$listing" | tr -d ' ')" "$size"
+  return 0
 }
 
 for app in "${selected_apps[@]}"; do
@@ -218,7 +305,11 @@ for app in "${selected_apps[@]}"; do
   fi
 
   if [[ "$purge" == true ]]; then
-    [[ "$dry_run" == true ]] || backup_app "$app" "$dir"
+    if [[ "$dry_run" != true ]]; then
+      # No verified archive, no deletion. This is the whole safety property.
+      backup_app "$app" "$dir" || die "Backup failed for $app. Nothing was deleted, and the other apps were left alone."
+      confirm_purge "$app"
+    fi
     run rm -rf "$dir"
   else
     # Keep data and settings; drop the checkout and build artefacts around them.

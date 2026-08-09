@@ -83,4 +83,44 @@ mode="$(stat -c '%a' "$backup" 2>/dev/null || stat -f '%Lp' "$backup")"
   exit 1
 }
 
+# ── QC-06: purge must never delete without a verified archive ────────────────
+
+# The archive has to contain settings, not just data. Without .env a restored
+# install has no access codes or integration credentials.
+seed_root "$work/contents"
+bash "$uninstall" --shed --install-root "$work/contents" --purge --yes >/dev/null
+archive="$(find "$work/contents" -maxdepth 1 -name 'shed-backup-*.tar.gz' | head -n 1)"
+tar -tzf "$archive" | grep -q '^\.\?/\?data/' || { echo "Archive is missing data/." >&2; exit 1; }
+tar -tzf "$archive" | grep -q '^\.\?/\?\.env$' || { echo "Archive is missing .env." >&2; exit 1; }
+
+# When the archive cannot be written at all, nothing may be deleted. Making the
+# install root read-only fails tar the same way an unreadable source file does,
+# without needing root to set up.
+seed_root "$work/nowrite"
+chmod 555 "$work/nowrite"
+set +e
+out="$(bash "$uninstall" --shed --install-root "$work/nowrite" --purge --yes 2>&1)"
+code=$?
+set -e
+chmod 755 "$work/nowrite"
+[[ -f "$work/nowrite/shed/data/db.sqlite" ]] || { echo "A failed archive must not delete the records." >&2; exit 1; }
+[[ -f "$work/nowrite/shed/.env" ]] || { echo "A failed archive must not delete the settings." >&2; exit 1; }
+[[ $code -ne 0 ]] || { echo "A failed archive must exit non-zero." >&2; exit 1; }
+grep -qi "nothing" <<<"$out" || { echo "A failed archive must say nothing was deleted." >&2; exit 1; }
+[[ -d "$work/nowrite/bask" ]] || { echo "An unrelated app was removed after a failure." >&2; exit 1; }
+
+# Keepers do symlink data onto a larger disk. The archive must then contain the
+# records, not the link — otherwise the backup looks fine and restores nothing.
+seed_root "$work/symlinked"
+mkdir -p "$work/elsewhere"
+mv "$work/symlinked/shed/data" "$work/elsewhere/shed-data"
+ln -s "$work/elsewhere/shed-data" "$work/symlinked/shed/data"
+bash "$uninstall" --shed --install-root "$work/symlinked" --purge --yes >/dev/null
+linked_archive="$(find "$work/symlinked" -maxdepth 1 -name 'shed-backup-*.tar.gz' | head -n 1)"
+[[ -n "$linked_archive" ]] || { echo "No archive was written for a symlinked data directory." >&2; exit 1; }
+[[ "$(tar -xzOf "$linked_archive" data/db.sqlite 2>/dev/null)" == "records" ]] || {
+  echo "A symlinked data directory was archived as a link, not as records." >&2
+  exit 1
+}
+
 echo "Uninstaller tests passed."
