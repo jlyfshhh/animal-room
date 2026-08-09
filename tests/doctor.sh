@@ -86,4 +86,54 @@ for name in Taco Odysseus; do
   grep -qF "$name" <<<"$scrubbed" && { echo "A sensor reading leaked $name." >&2; exit 1; }
 done
 
+# ── QC-28: the fixtures a support paste actually contains ────────────────────
+check_redacted() {
+  local label="$1" line="$2" must_not="$3"
+  local out
+  out="$(printf '%s\n' "$line" | redact | scrub_readings)"
+  if grep -qF -- "$must_not" <<<"$out"; then
+    echo "$label leaked: $out" >&2
+    exit 1
+  fi
+}
+
+check_redacted "a bearer token" \
+  'ERROR auth failed: Authorization: Bearer abc123def456ghi789jkl012mno345' 'abc123def456'
+check_redacted "basic credentials" \
+  'ERROR upstream refused: Authorization: Basic dXNlcjpwYXNzd29yZA==' 'dXNlcjpwYXNzd29yZA'
+check_redacted "a JWT" \
+  'ERROR token rejected eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.7dGhpc19pc19hX3NpZw' 'eyJzdWIiOiIxIn0'
+check_redacted "a cookie header" \
+  'ERROR request failed Cookie: bask_keeper=v2.123.deadbeefcafe; other=1' 'deadbeefcafe'
+check_redacted "a password containing spaces" \
+  'ERROR login failed PASSWORD="correct horse battery staple"' 'correct horse battery'
+check_redacted "a token in a query string" \
+  'ERROR fetch failed https://ntfy.sh/publish?token=sk_live_9f8e7d6c5b4a' 'sk_live_9f8e7d6c5b4a'
+check_redacted "credentials inside a URL" \
+  'ERROR could not reach https://admin:hunter2@192.168.1.5/api' 'hunter2'
+check_redacted "an email address" \
+  'ERROR notify failed for keeper@example.com' 'keeper@example.com'
+check_redacted "a sensor reading" \
+  'ERROR range check failed: Achilles Warm Side=92.1C/51%' 'Achilles'
+check_redacted "a MAC address" \
+  'ERROR pairing failed for A4:C1:38:E9:AA:45' 'A4:C1:38:E9:AA:45'
+echo "  every credential fixture is redacted"
+
+# The false positive that let routine access logs through: `OOM` matched the
+# `oom` inside `room-dashboard`, and those log lines carry animal names.
+problem_filter() {
+  grep -iE '(^|[^a-z])(error|warn|warning|fatal|critical|exception|traceback|refused|denied|permission|cannot|could not|unable|failed|not found|no such|address already|EADDR[A-Z]*|panic|unhandled|out of memory|oom-killer|oom_kill|killed|segfault)([^a-z]|$)'
+}
+if printf '%s\n' '127.0.0.1 - GET /room-dashboard?animal=Achilles HTTP/1.1 200' | problem_filter >/dev/null; then
+  echo "A routine access log still matches the problem filter." >&2
+  exit 1
+fi
+# And genuine problems must still be reported.
+for genuine in 'ERROR something broke' 'container was OOM killed' 'WARNING disk nearly full' \
+               'oom-killer invoked' 'Traceback (most recent call last):'; do
+  printf '%s\n' "$genuine" | problem_filter >/dev/null \
+    || { echo "A genuine problem line was filtered out: $genuine" >&2; exit 1; }
+done
+echo "  routine logs are excluded while genuine problems still appear"
+
 echo "Diagnostics tests passed."

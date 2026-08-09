@@ -35,10 +35,20 @@ item() { printf '  %-22s %s\n' "$1" "${2:-unknown}"; }
 # Anything token-shaped is replaced before it reaches the report: long hex or
 # base64 runs, and the value side of any key whose name suggests a secret.
 redact() {
+  # Order matters: the specific schemes are handled before the generic
+  # key=value rule, which would otherwise consume the separator and leave the
+  # value itself in the clear.
   sed -E \
+    -e 's/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*/<jwt redacted>/g' \
+    -e 's/(Bearer|Basic|Digest|Token)[[:space:]]+[A-Za-z0-9._~+\/=-]+/\1 <redacted>/gI' \
+    -e 's/(Set-)?Cookie:[[:space:]]*.*/Cookie: <redacted>/gI' \
+    -e 's#([a-zA-Z][a-zA-Z0-9+.-]*://)[^/[:space:]@]*@#\1<credentials redacted>@#g' \
+    -e 's/([?&](token|key|secret|code|password|auth|sig|signature)=)[^\&[:space:]"]*/\1<redacted>/gI' \
     -e 's/[A-Fa-f0-9]{24,}/<redacted>/g' \
     -e 's/[A-Za-z0-9+\/]{40,}={0,2}/<redacted>/g' \
-    -e 's/(TOKEN|SECRET|PASSWORD|PASSWD|API_?KEY|ACCESS_?CODE|AUTHORIZATION|COOKIE)([\"'"'"']?\s*[:=]\s*)[^[:space:],;}\"]*/\1\2<redacted>/gI'
+    -e 's/(TOKEN|SECRET|PASSWORD|PASSWD|API_?KEY|ACCESS_?CODE|AUTHORIZATION|COOKIE|EMAIL|USERNAME)([\"'"'"']?[[:space:]]*[:=][[:space:]]*)("[^"]*"|[^[:space:],;}]*)/\1\2<redacted>/gI' \
+    -e 's/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/<email redacted>/g' \
+    -e 's/([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}/<mac redacted>/g'
 }
 
 # Sensors are named after the animals they sit with, so a reading is a record.
@@ -190,7 +200,10 @@ for app in shed bask; do
     # every sensor, and sensors are named after animals — that is the keeper's
     # data, it is useless for debugging, and it should not travel.
     log_lines=$("${docker_cmd[@]}" logs --tail 400 "$app" 2>&1 \
-      | grep -iE 'error|warn|fatal|critical|exception|traceback|refus|denied|permission|cannot|could not|unable|failed|not found|no such|address already|EADDR|bind|listen|OOM|killed|exit|panic|unhandled' \
+      # Word boundaries, not substrings: the previous pattern's `OOM` matched the
+      # `oom` inside `room-dashboard`, so routine access logs — which carry animal
+      # names in their query strings — passed a filter meant to exclude them.
+      | grep -iE '(^|[^a-z])(error|warn|warning|fatal|critical|exception|traceback|refused|denied|permission|cannot|could not|unable|failed|not found|no such|address already|EADDR[A-Z]*|panic|unhandled|out of memory|oom-killer|oom_kill|killed|segfault)([^a-z]|$)' \
       | tail -20 | redact | scrub_readings)
     if [[ -n "$log_lines" ]]; then
       printf '%s\n' "$log_lines" | sed 's/^/      /'
