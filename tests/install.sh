@@ -162,11 +162,40 @@ case "$command" in
           printf false >"$state/$app.oom"
           printf healthy >"$state/$app.health"
         fi
-        if [[ "$app" == bask && "${TEST_SKIP_SCANNER:-false}" != true ]]; then
+        if [[ "$app" == bask && "${TEST_SKIP_SCANNER:-false}" != true &&
+              -f "$PWD/compose.yaml" ]] && grep -q '^  bask-scanner:' "$PWD/compose.yaml"; then
           printf true >"$state/bask-scanner.exists"
           printf true >"$state/bask-scanner.running"
           printf false >"$state/bask-scanner.oom"
           printf healthy >"$state/bask-scanner.health"
+          case "${TEST_SCANNER_FAILURE_KIND:-}" in
+            unhealthy)
+              printf unhealthy >"$state/bask-scanner.health"
+              ;;
+            starting)
+              printf starting >"$state/bask-scanner.health"
+              ;;
+            oom)
+              printf true >"$state/bask-scanner.oom"
+              printf false >"$state/bask-scanner.running"
+              ;;
+          esac
+        fi
+        if [[ "$app" == bask && "${TEST_SKIP_PROXY:-false}" != true &&
+              -f "$PWD/compose.yaml" ]] && grep -q '^  bask-dbus-proxy:' "$PWD/compose.yaml"; then
+          printf true >"$state/bask-dbus-proxy.exists"
+          printf true >"$state/bask-dbus-proxy.running"
+          printf false >"$state/bask-dbus-proxy.oom"
+          printf healthy >"$state/bask-dbus-proxy.health"
+          case "${TEST_PROXY_FAILURE_KIND:-}" in
+            unhealthy)
+              printf unhealthy >"$state/bask-dbus-proxy.health"
+              ;;
+            oom)
+              printf true >"$state/bask-dbus-proxy.oom"
+              printf false >"$state/bask-dbus-proxy.running"
+              ;;
+          esac
         fi
         ;;
       down)
@@ -175,10 +204,16 @@ case "$command" in
         if [[ "$app" == bask ]]; then
           printf false >"$state/bask-scanner.exists"
           printf false >"$state/bask-scanner.running"
+          printf false >"$state/bask-dbus-proxy.exists"
+          printf false >"$state/bask-dbus-proxy.running"
         fi
         ;;
       stop)
         printf false >"$state/$app.running"
+        if [[ "$app" == bask ]]; then
+          printf false >"$state/bask-scanner.running"
+          printf false >"$state/bask-dbus-proxy.running"
+        fi
         ;;
       *)
         echo "Unexpected fake compose command: $subcommand" >&2
@@ -235,7 +270,7 @@ mkdir -p "$dir/data"
 if [[ ! -f "$dir/.env" ]]; then
   printf 'BASK_PORT=8080\nBASK_DATA_PATH=./data\n' >"$dir/.env"
 fi
-printf 'services:\n  bask:\n    image: ghcr.io/example/bask:latest\n' >"$dir/compose.yaml"
+printf 'services:\n  bask:\n    image: ghcr.io/example/bask:latest\n  bask-scanner:\n    image: ghcr.io/example/bask:latest\n  bask-dbus-proxy:\n    image: ghcr.io/example/bask:latest\n' >"$dir/compose.yaml"
 if docker info >/dev/null 2>&1; then cmd=(docker); else cmd=(sudo docker); fi
 (cd "$dir" && "${cmd[@]}" compose pull -q && "${cmd[@]}" compose up -d)
 SH
@@ -277,6 +312,9 @@ run_fixture_install() {
     TEST_DOCKER_FAILURE_KIND="${TEST_DOCKER_FAILURE_KIND:-oom}" \
     TEST_BRIDGE_FAIL="${TEST_BRIDGE_FAIL:-false}" \
     TEST_SKIP_SCANNER="${TEST_SKIP_SCANNER:-false}" \
+    TEST_SCANNER_FAILURE_KIND="${TEST_SCANNER_FAILURE_KIND:-}" \
+    TEST_SKIP_PROXY="${TEST_SKIP_PROXY:-false}" \
+    TEST_PROXY_FAILURE_KIND="${TEST_PROXY_FAILURE_KIND:-}" \
     TEST_BASK_PORT="${TEST_BASK_PORT:-8080}" \
     TEST_SHED_PORT="${TEST_SHED_PORT:-3000}" \
     bash "$root/install.sh" --install-root "$scenario/apps" "$@"
@@ -369,6 +407,14 @@ grep -q 'bask_port=unset .*docker compose up -d --no-build --pull never' "$oom/d
   echo "OOM rollback reused the failed update's port override." >&2
   exit 1
 }
+grep -q 'cwd=.*/apps/bask docker compose down --remove-orphans' "$oom/docker/docker.log" || {
+  echo "OOM rollback did not tear down the failed Compose graph before restoring it." >&2
+  exit 1
+}
+[[ "$(cat "$oom/docker/bask-dbus-proxy.exists")" == false ]] || {
+  echo "OOM rollback left Bask's newly added D-Bus proxy running as an orphan." >&2
+  exit 1
+}
 
 # An unhealthy first install is stopped, but its bind-mounted data is retained
 # so the operator can diagnose or retry it.
@@ -395,6 +441,56 @@ if TEST_SKIP_SCANNER=true run_fixture_install "$missing_scanner" --bask >"$missi
 fi
 grep -q 'scanner container was not created' "$missing_scanner/output" || {
   echo "Missing scanner failure was not explained." >&2
+  exit 1
+}
+
+unhealthy_scanner="$work/unhealthy-scanner"
+mkdir -p "$unhealthy_scanner"
+write_meminfo "$unhealthy_scanner/meminfo" 2097152
+if TEST_SCANNER_FAILURE_KIND=unhealthy run_fixture_install "$unhealthy_scanner" --bask >"$unhealthy_scanner/output" 2>&1; then
+  echo "Bask with an unhealthy scanner should fail verification." >&2
+  exit 1
+fi
+grep -q 'scanner health check reported unhealthy' "$unhealthy_scanner/output" || {
+  echo "Unhealthy scanner failure was not explained." >&2
+  exit 1
+}
+
+starting_scanner="$work/starting-scanner"
+mkdir -p "$starting_scanner"
+write_meminfo "$starting_scanner/meminfo" 2097152
+if TEST_SCANNER_FAILURE_KIND=starting run_fixture_install "$starting_scanner" --bask >"$starting_scanner/output" 2>&1; then
+  echo "Bask whose scanner never becomes healthy should fail verification." >&2
+  exit 1
+fi
+grep -q 'scanner did not become healthy' "$starting_scanner/output" || {
+  echo "Starting scanner failure was not explained." >&2
+  exit 1
+}
+
+# The scanner must not receive the host bus directly. Its filtered D-Bus proxy
+# is therefore just as mandatory as the scanner process itself.
+missing_proxy="$work/missing-proxy"
+mkdir -p "$missing_proxy"
+write_meminfo "$missing_proxy/meminfo" 2097152
+if TEST_SKIP_PROXY=true run_fixture_install "$missing_proxy" --bask >"$missing_proxy/output" 2>&1; then
+  echo "Bask without its D-Bus proxy should fail verification." >&2
+  exit 1
+fi
+grep -q 'D-Bus proxy container was not created' "$missing_proxy/output" || {
+  echo "Missing D-Bus proxy failure was not explained." >&2
+  exit 1
+}
+
+unhealthy_proxy="$work/unhealthy-proxy"
+mkdir -p "$unhealthy_proxy"
+write_meminfo "$unhealthy_proxy/meminfo" 2097152
+if TEST_PROXY_FAILURE_KIND=unhealthy run_fixture_install "$unhealthy_proxy" --bask >"$unhealthy_proxy/output" 2>&1; then
+  echo "Bask with an unhealthy D-Bus proxy should fail verification." >&2
+  exit 1
+fi
+grep -q 'D-Bus proxy health check reported unhealthy' "$unhealthy_proxy/output" || {
+  echo "Unhealthy D-Bus proxy failure was not explained." >&2
   exit 1
 }
 

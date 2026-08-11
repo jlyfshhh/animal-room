@@ -4,6 +4,10 @@ on:
   push:
   pull_request:
   workflow_call:
+    secrets:
+      PRIVACY_DENYLIST:
+        description: Private identities to reject; stored only as a repository secret
+        required: false
 
 permissions:
   contents: read
@@ -14,10 +18,17 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Syntax
-        run: bash -n install.sh uninstall.sh doctor.sh tests/install.sh tests/uninstall.sh tests/doctor.sh
+        run: bash -n install.sh uninstall.sh doctor.sh scripts/privacy-scan.sh tests/install.sh tests/uninstall.sh tests/doctor.sh tests/privacy-scan.sh
       - name: Selection behavior
         run: bash tests/install.sh
       - name: Uninstaller behavior
         run: bash tests/uninstall.sh
       - name: Diagnostics leak nothing
         run: bash tests/doctor.sh
+      - name: Privacy scan behavior
+        run: bash tests/privacy-scan.sh
+      - name: Privacy scan
+        env:
+          PRIVACY_DENYLIST: ${{ secrets.PRIVACY_DENYLIST }}
+          PRIVACY_SCAN_STRICT: ${{ github.event_name == 'pull_request' && (github.event.pull_request.head.repo.full_name != github.repository || github.actor == 'dependabot[bot]') && '0' || '1' }}
+        run: bash scripts/privacy-scan.sh

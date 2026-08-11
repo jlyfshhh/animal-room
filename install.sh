@@ -253,6 +253,14 @@ rollback_app() {
     return 0
   fi
 
+  # Stop the just-installed Compose graph before restoring the prior file.
+  # An update can add a new privileged helper (for example Bask's filtered
+  # D-Bus proxy) that the old Compose file does not know about. Restoring the
+  # old file first would leave that helper running as an orphan after rollback.
+  if [[ -f "$dir/compose.yaml" ]]; then
+    rollback_compose "$app" "$dir" down --remove-orphans >/dev/null 2>&1 || return 1
+  fi
+
   restore_saved_file "$state" "$dir" .env
   restore_saved_file "$state" "$dir" compose.yaml
 
@@ -421,7 +429,8 @@ container_value() {
 
 wait_for_app() {
   local app="$1" port="$2" attempt code running oom health_state
-  local scanner_running="" scanner_oom=""
+  local scanner_running="" scanner_oom="" scanner_health=""
+  local proxy_running="" proxy_oom="" proxy_health=""
   health_failure_reason="$app did not answer its health endpoint on port $port"
   for ((attempt=1; attempt<=health_attempts; attempt++)); do
     oom="$(container_value "$app" '{{.State.OOMKilled}}')"
@@ -435,20 +444,42 @@ wait_for_app() {
     if [[ "$app" == bask ]]; then
       scanner_oom="$(container_value bask-scanner '{{.State.OOMKilled}}')"
       scanner_running="$(container_value bask-scanner '{{.State.Running}}')"
+      scanner_health="$(container_value bask-scanner '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}')"
+      proxy_oom="$(container_value bask-dbus-proxy '{{.State.OOMKilled}}')"
+      proxy_running="$(container_value bask-dbus-proxy '{{.State.Running}}')"
+      proxy_health="$(container_value bask-dbus-proxy '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}')"
       if [[ "$scanner_oom" == true ]]; then
         health_failure_reason="Bask's Bluetooth scanner was killed because the host ran out of memory"
+        return 1
+      fi
+      if [[ "$proxy_oom" == true ]]; then
+        health_failure_reason="Bask's Bluetooth D-Bus proxy was killed because the host ran out of memory"
         return 1
       fi
     fi
     code="$(curl -sS -o /dev/null -m 5 -w '%{http_code}' "http://127.0.0.1:${port}/api/health" 2>/dev/null || true)"
     if [[ "$running" == true && "$code" == 200 &&
-          ( "$app" != bask || "$scanner_running" == true ) ]]; then
+          ( "$app" != bask ||
+            ( "$scanner_running" == true && "$scanner_health" == healthy &&
+              "$proxy_running" == true && "$proxy_health" == healthy ) ) ]]; then
       return 0
     fi
     if [[ "$app" == bask && -z "$scanner_running" ]]; then
       health_failure_reason="Bask's Bluetooth scanner container was not created"
     elif [[ "$app" == bask && "$scanner_running" != true ]]; then
       health_failure_reason="Bask's Bluetooth scanner stopped during startup"
+    elif [[ "$app" == bask && "$scanner_health" == unhealthy ]]; then
+      health_failure_reason="Bask's Bluetooth scanner health check reported unhealthy"
+    elif [[ "$app" == bask && "$scanner_health" != healthy ]]; then
+      health_failure_reason="Bask's Bluetooth scanner did not become healthy"
+    elif [[ "$app" == bask && -z "$proxy_running" ]]; then
+      health_failure_reason="Bask's Bluetooth D-Bus proxy container was not created"
+    elif [[ "$app" == bask && "$proxy_running" != true ]]; then
+      health_failure_reason="Bask's Bluetooth D-Bus proxy stopped during startup"
+    elif [[ "$app" == bask && "$proxy_health" == unhealthy ]]; then
+      health_failure_reason="Bask's Bluetooth D-Bus proxy health check reported unhealthy"
+    elif [[ "$app" == bask && "$proxy_health" != healthy ]]; then
+      health_failure_reason="Bask's Bluetooth D-Bus proxy did not become healthy"
     elif [[ "$health_state" == unhealthy ]]; then
       health_failure_reason="$app's container health check reported unhealthy"
     elif [[ -z "$running" ]]; then

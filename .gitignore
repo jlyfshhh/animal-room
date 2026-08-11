@@ -5,3 +5,4 @@
 # $HOME or a flag, make the backup mount configurable, and install it from
 # install.sh) before removing this ignore and committing it.
 /deploy/animal-app-backup
+.privacy-denylist
