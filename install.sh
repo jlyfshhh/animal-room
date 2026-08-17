@@ -4,6 +4,7 @@ set -Eeuo pipefail
 
 install_root="${ANIMAL_ROOM_HOME:-$HOME}"
 dry_run=false
+print_docker_source=false
 select_bask=false
 select_shed=false
 select_haven=false
@@ -25,8 +26,12 @@ usage() {
   cat <<'USAGE'
 Usage: install.sh [--bask] [--shed] [--haven] [--all]
                   [--install-root PATH] [--dry-run]
+       install.sh --print-docker-source
 
 With no app flags, the installer opens an interactive chooser.
+
+--print-docker-source reports which Docker package repository this machine
+resolves to and exits. Useful when an install fails while setting up Docker.
 
 USAGE
 }
@@ -53,11 +58,63 @@ while (($#)); do
       install_root="$1"
       ;;
     --dry-run) dry_run=true ;;
+    --print-docker-source) print_docker_source=true ;;
     -h|--help) usage; exit 0 ;;
     *) die "Unknown option: $1" ;;
   esac
   shift
 done
+
+# Docker keys and publishes each distribution separately, under codenames that
+# exist only in that distribution's repository: Ubuntu's "noble" is not in the
+# Debian repo, and Mint's own codename is in neither. Pointing every host at
+# linux/debian 404s inside `apt-get update` and dies with an apt error that says
+# nothing about why.
+#
+# Ubuntu derivatives (Mint, Pop!_OS, elementary) all carry UBUNTU_CODENAME in
+# os-release naming the Ubuntu release they are built from, which is exactly the
+# codename Docker publishes — so they resolve without being enumerated here.
+docker_repo_source() {
+  local release="${ANIMAL_ROOM_OS_RELEASE_PATH:-/etc/os-release}"
+  [[ -r "$release" ]] || return 1
+  local id id_like codename ubuntu_codename
+  id="$(. "$release" 2>/dev/null && printf '%s' "${ID:-}")"
+  id_like="$(. "$release" 2>/dev/null && printf '%s' "${ID_LIKE:-}")"
+  codename="$(. "$release" 2>/dev/null && printf '%s' "${VERSION_CODENAME:-}")"
+  ubuntu_codename="$(. "$release" 2>/dev/null && printf '%s' "${UBUNTU_CODENAME:-}")"
+
+  case "$id" in
+    debian|raspbian) [[ -n "$codename" ]] && { printf 'debian %s' "$codename"; return 0; } ;;
+    ubuntu) [[ -n "$codename" ]] && { printf 'ubuntu %s' "$codename"; return 0; } ;;
+  esac
+  # A derivative: prefer the upstream codename it names for itself.
+  if [[ -n "$ubuntu_codename" ]]; then
+    printf 'ubuntu %s' "$ubuntu_codename"; return 0
+  fi
+  if [[ " $id_like " == *" ubuntu "* && -n "$codename" ]]; then
+    printf 'ubuntu %s' "$codename"; return 0
+  fi
+  if [[ " $id_like " == *" debian "* && -n "$codename" ]]; then
+    printf 'debian %s' "$codename"; return 0
+  fi
+  return 1
+}
+
+os_pretty_name() {
+  local release="${ANIMAL_ROOM_OS_RELEASE_PATH:-/etc/os-release}"
+  [[ -r "$release" ]] || { printf 'this system'; return 0; }
+  . "$release" 2>/dev/null && printf '%s' "${PRETTY_NAME:-this system}"
+}
+
+if [[ "$print_docker_source" == true ]]; then
+  if source="$(docker_repo_source)"; then
+    printf '%s on %s -> https://download.docker.com/linux/%s %s stable\n' \
+      "$(os_pretty_name)" "$(uname -m)" "${source%% *}" "${source#* }"
+    exit 0
+  fi
+  printf '%s is not a distribution this installer can set Docker up on.\n' "$(os_pretty_name)" >&2
+  exit 1
+fi
 
 choose_apps() {
   [[ -r /dev/tty ]] || die "No interactive terminal. Use --bask, --shed, or --haven."
@@ -115,16 +172,46 @@ memory_total_mb() {
   awk '/^MemTotal:/{printf "%d", $2/1024; found=1} END{exit !found}' "$meminfo_path"
 }
 
-# Shed's measured startup peak does not fit on a 512 MB Pi. Check this before
-# Docker, downloads, or either app directory is touched. Bask remains supported
-# on those boards when selected on its own.
-if [[ "$select_shed" == true ]]; then
-  if total_memory_mb="$(memory_total_mb)"; then
-    if ((total_memory_mb < 900)); then
-      die "Shed needs a board with at least 1 GB of RAM (about 900 MB usable); this host reports ${total_memory_mb} MB. Bask can still be installed on its own with --bask."
+# What the apps can actually have, not what the board was sold as. A 1 GB board
+# running a desktop reports ~986 MB total and leaves ~200 MB free, which passes
+# any check on MemTotal and then fails at container start — the failure this
+# preflight exists to prevent. MemAvailable already accounts for reclaimable
+# page cache, so it is the honest number.
+memory_available_mb() {
+  [[ -r "$meminfo_path" ]] || return 1
+  awk '/^MemAvailable:/{printf "%d", $2/1024; found=1} END{exit !found}' "$meminfo_path"
+}
+
+# Measured fresh-start footprints: Bask ~160 MB across its two containers, Shed
+# ~155 MB, the Haven proxy ~45 MB. These floors leave room for the pull, the
+# first-run migrations and a little growth without demanding a big board.
+bask_required_mb=240
+shed_required_mb=400
+haven_required_mb=650
+
+required_mb=0
+if [[ "$select_haven" == true ]]; then
+  required_mb="$haven_required_mb"
+elif [[ "$select_shed" == true ]]; then
+  required_mb="$shed_required_mb"
+elif [[ "$select_bask" == true ]]; then
+  required_mb="$bask_required_mb"
+fi
+
+if ((required_mb > 0)); then
+  if available_memory_mb="$(memory_available_mb)"; then
+    if ((available_memory_mb < required_mb)); then
+      total_note=""
+      if total_memory_mb="$(memory_total_mb)"; then
+        total_note=" of ${total_memory_mb} MB total"
+      fi
+      die "${selection[*]} needs about ${required_mb} MB of free memory; this host has ${available_memory_mb} MB free${total_note}.
+    A desktop session is the usual reason — Raspberry Pi OS Lite (or booting to
+    the console) typically frees 500-700 MB. Closing a browser on the machine
+    helps too. Bask alone is the lightest option and can be installed with --bask."
     fi
   else
-    warn "Could not read total memory from $meminfo_path; continuing without the RAM preflight."
+    warn "Could not read available memory from $meminfo_path; continuing without the RAM preflight."
   fi
 fi
 
@@ -134,19 +221,26 @@ fi
 command -v sudo >/dev/null 2>&1 || die "sudo is required."
 
 install_docker() {
-  say "Installing Docker Engine and Compose"
+  local source family codename arch
+  if ! source="$(docker_repo_source)"; then
+    die "This installer sets up Docker for Debian, Raspberry Pi OS and Ubuntu, and could not recognise $(os_pretty_name).
+    If Docker Engine and the Compose plugin are already installed here, rerun
+    this script and it will use them instead of installing its own."
+  fi
+  family="${source%% *}"
+  codename="${source#* }"
+
+  say "Installing Docker Engine and Compose (${family} ${codename})"
   sudo apt-get update -qq
   sudo apt-get install -y -qq ca-certificates curl
   sudo install -m 0755 -d /etc/apt/keyrings
-  sudo curl -fsSL https://download.docker.com/linux/debian/gpg \
+  sudo curl -fsSL "https://download.docker.com/linux/${family}/gpg" \
     -o /etc/apt/keyrings/docker.asc
   sudo chmod a+r /etc/apt/keyrings/docker.asc
 
-  local codename arch
-  codename="$(. /etc/os-release && printf '%s' "$VERSION_CODENAME")"
   arch="$(dpkg --print-architecture)"
   printf '%s\n' \
-    "deb [arch=$arch signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $codename stable" |
+    "deb [arch=$arch signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/${family} $codename stable" |
     sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
   sudo apt-get update -qq
   sudo apt-get install -y -qq docker-ce docker-ce-cli containerd.io \

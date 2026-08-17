@@ -298,8 +298,53 @@ seed_running_app() {
   printf 'ghcr.io/example/%s:latest' "$app" >"$state/$app.image_ref"
 }
 
-# Shed and Haven must fail before making changes on a 512 MB host. Bask alone
-# is explicitly allowed and must complete on the same fixture.
+# Docker publishes each distribution under its own codenames, so resolving the
+# wrong family 404s inside apt with an error that explains nothing. Ubuntu
+# derivatives are covered by UBUNTU_CODENAME rather than by being enumerated.
+# Every expected codename below is one Docker actually publishes.
+osrel="$work/os-release"
+mkdir -p "$osrel"
+write_os_release() {
+  printf '%s\n' "$2" >"$osrel/$1"
+}
+write_os_release debian 'PRETTY_NAME="Debian GNU/Linux 13 (trixie)"
+ID=debian
+VERSION_CODENAME=trixie'
+write_os_release ubuntu 'PRETTY_NAME="Ubuntu 24.04.1 LTS"
+ID=ubuntu
+ID_LIKE=debian
+VERSION_CODENAME=noble
+UBUNTU_CODENAME=noble'
+write_os_release mint 'PRETTY_NAME="Linux Mint 22"
+ID=linuxmint
+ID_LIKE=ubuntu
+VERSION_CODENAME=wilma
+UBUNTU_CODENAME=noble'
+write_os_release fedora 'PRETTY_NAME="Fedora Linux 41"
+ID=fedora'
+
+check_docker_source() {
+  local fixture="$1" expected="$2" actual
+  actual="$(ANIMAL_ROOM_OS_RELEASE_PATH="$osrel/$fixture" bash "$root/install.sh" --print-docker-source)"
+  case "$actual" in
+    *"$expected"*) ;;
+    *) echo "$fixture resolved to '$actual', expected to contain '$expected'." >&2; exit 1 ;;
+  esac
+}
+check_docker_source debian "linux/debian trixie"
+check_docker_source ubuntu "linux/ubuntu noble"
+# Mint's own codename ("wilma") is in no Docker repository; its Ubuntu base is.
+check_docker_source mint "linux/ubuntu noble"
+if ANIMAL_ROOM_OS_RELEASE_PATH="$osrel/fedora" bash "$root/install.sh" --print-docker-source >/dev/null 2>&1; then
+  echo "Fedora should not resolve to a Docker repository." >&2
+  exit 1
+fi
+
+# Shed and Haven must fail before making changes on a host with too little free
+# memory. Bask alone is explicitly allowed and must complete on the same fixture.
+# The gate is MemAvailable, not MemTotal: a 1 GB board running a desktop passes
+# any MemTotal check and then dies at container start, which is the exact
+# failure this preflight exists to prevent.
 low="$work/low-memory"
 mkdir -p "$low"
 write_meminfo "$low/meminfo" 524288
@@ -308,7 +353,7 @@ for selection_flag in --shed --haven; do
     echo "$selection_flag should refuse a 512 MB host." >&2
     exit 1
   fi
-  grep -q "at least 1 GB" "$low/output" || { echo "$selection_flag did not explain its RAM requirement." >&2; exit 1; }
+  grep -q "of free memory" "$low/output" || { echo "$selection_flag did not explain its RAM requirement." >&2; exit 1; }
 done
 [[ ! -e "$low/apps/shed" ]] || { echo "Low-memory preflight touched Shed's install directory." >&2; exit 1; }
 run_fixture_install "$low" --bask >/dev/null
