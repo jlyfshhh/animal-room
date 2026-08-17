@@ -35,39 +35,66 @@ other one and enable Haven. No data is replaced.
 
 ## What you need
 
+**A Raspberry Pi 5 with 4 GB is the recommendation.** 2 GB is the supported
+minimum. The board matters less than what else it is running — see below.
+
 | | Bask alone | Shed alone | Haven (both) |
 |---|---|---|---|
-| Memory | 512 MB | **1 GB** | 2 GB |
-| Comfortable on | Pi Zero 2 W, Pi 3 | Pi 3 (1 GB+), Pi 4 | Pi 4, Pi 5 |
+| Free memory needed | 240 MB | 400 MB | 650 MB |
+| Minimum board | 1 GB | 2 GB | 2 GB |
+| Recommended | 2 GB | 4 GB | 4 GB |
 
-Both need a 64-bit OS and a few GB of free disk.
+Any 64-bit Debian, Raspberry Pi OS or Ubuntu system works, plus a few GB of
+free disk. Bask also needs a Bluetooth adapter and compatible sensors.
+
+### The OS matters more than the board
+
+**Use Raspberry Pi OS Lite (64-bit).** A desktop session is the single biggest
+consumer of memory on a small board — Lite idles near 280 MB where a desktop
+can take 800 MB or more. A 1 GB board running a desktop has roughly 200 MB
+free, which is not enough for Shed to start, while the same board on Lite has
+ample room. You do not need a screen on the machine: every app is opened from a
+phone or laptop on your network.
+
+On a PC rather than a Pi, plain **Debian** or **Ubuntu LTS** both work.
+
+### What the apps actually use
 
 Nothing is compiled during installation. Both apps are published as prebuilt
 multi-architecture images, so installing downloads a container and starts it —
-your board only ever has to *run* the apps, not build them. Measured while
-running: Bask about 130 MB, Shed about 300 MB.
+your board only ever has to *run* the apps, not build them.
 
-Measured on arm64, Shed's worker peaks near **390 MB** while starting. A Pi
-Zero 2 W has 512 MB in total, so once the OS has taken its share there is not
-enough left — and if the board is already doing another job, less still. Shed
-gets killed part way through starting, which looks exactly like a successful
-install whose address then refuses to load. **A Pi Zero 2 W is a Bask board.**
-Give Shed 1 GB, and the pair 2 GB.
+Measured on an arm64 Pi, moments after a fresh start:
+
+| | resident memory |
+|---|---|
+| Bask (web) | 106 MB |
+| Bask (Bluetooth scanner) | 55 MB |
+| Shed | 154 MB, answering its health check 4 seconds after start |
+| Haven room proxy | 46 MB |
+| **All of it together** | **~360 MB** |
+
+Shed will grow beyond that over time on a large machine — it is a JavaScript
+runtime, and its heap expands to use memory that is going spare. That is not a
+requirement, and it sizes itself down on a smaller board.
+
+**A Pi Zero 2 W is a Bask board.** 512 MB total leaves enough for Bask on Lite
+and not enough for Shed. The installer checks free memory before it changes
+anything and tells you if there is not enough, rather than failing halfway.
 
 You can also start with one app and add the other later; the installer will not
 disturb what is already there.
 
 ## Install
 
-On a 64-bit Raspberry Pi running Raspberry Pi OS, or another 64-bit Debian
-system, run:
+On 64-bit Raspberry Pi OS (Lite recommended), Debian, or Ubuntu, run:
 
 ```bash
 curl -fsSL https://animalroom.app/install.sh | bash
 ```
 
 Choose **Bask**, **Shed**, or **Haven**. The installer adds Docker from Docker's
-official Debian repository when needed, installs the selected app or apps, and
+official repository for your distribution when needed, installs the selected app or apps, and
 automatically makes the secure server-to-server connection required by Haven.
 
 For an unattended Haven install:

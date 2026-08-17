@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Viv — reptile and amphibian care for iPhone</title>
+<meta name="description" content="Viv is a local-first husbandry tracker for reptile and amphibian keepers. Feeding, shedding, weights and UV readings on your iPhone, with no account or app-run server.">
+<meta name="theme-color" content="#fffdf8">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<!-- Same posture as the rest of the site: GitHub Pages cannot send response
+     headers, so what can travel inside the page does. This page loads nothing
+     but its own image and its own inline styling. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta property="og:type" content="website"><meta property="og:title" content="Viv — reptile and amphibian care for iPhone"><meta property="og:description" content="Care records for the animals you actually live with. No account or app-run server."><meta property="og:url" content="https://animalroom.app/viv/"><meta property="og:image" content="https://animalroom.app/viv/og.png">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Viv — reptile and amphibian care for iPhone"><meta name="twitter:description" content="Care records for the animals you actually live with."><meta name="twitter:image" content="https://animalroom.app/viv/og.png">
+<style>
+  :root{--brand:#f2a516;--brand-deep:#9a4a11;--cream:#fff3d6;--ink:#22262e;--muted:#5c6675;--line:#ece7dd;--bg:#fffdf8;--bg-warm:#fdf4e3;--card:#fff;--ok:#2e9e5b;--radius:18px;--maxw:1080px;--font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased}a{color:var(--brand-deep);text-decoration:none}a:hover{text-decoration:underline}h1,h2,h3{line-height:1.15;letter-spacing:-.02em;margin:0}.wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}section{padding:72px 0}.eyebrow{text-transform:uppercase;letter-spacing:.12em;font-size:.78rem;font-weight:800;color:var(--brand-deep)}
+  header{position:sticky;top:0;z-index:50;background:rgba(255,253,248,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}.nav{display:flex;align-items:center;justify-content:space-between;height:64px}.wordmark{display:flex;align-items:center;gap:10px;color:var(--ink);font-weight:900;font-size:1.25rem;letter-spacing:-.03em}.wordmark:hover{text-decoration:none}.nav-links{display:flex;align-items:center;gap:22px;font-weight:600;font-size:.95rem}.nav-links a{color:var(--ink)}@media(max-width:620px){.nav-links .hide-sm{display:none}}
+  .hero{background:linear-gradient(180deg,var(--bg-warm),var(--bg));padding:64px 0 40px;text-align:center}.hero h1{font-size:clamp(2.3rem,5.5vw,3.6rem);font-weight:800}.hero h1 em{font-style:normal;color:var(--brand-deep)}.hero p.lead{font-size:clamp(1.05rem,2.4vw,1.3rem);color:var(--muted);max-width:680px;margin:18px auto 0}.hero-note{font-size:.9rem;color:var(--muted);margin-top:22px}.badge{display:inline-block;background:var(--cream);border:1px solid var(--brand);color:#7a4a08;border-radius:999px;padding:7px 17px;font-weight:700;font-size:.9rem;margin-top:26px}
+  .idea{background:var(--ink);color:#fdf6e7;text-align:center}.idea h2{font-size:clamp(1.5rem,4vw,2.1rem);font-weight:800;max-width:760px;margin:0 auto}.idea p{color:#b9c0cb;max-width:680px;margin:18px auto 0}
+  .shead{text-align:center;max-width:680px;margin:0 auto 46px}.shead h2{font-size:clamp(1.6rem,4vw,2.3rem);font-weight:800;margin-top:8px}.shead p{color:var(--muted);margin:14px 0 0;font-size:1.05rem}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}.feat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:24px}.feat .ico{font-size:1.7rem}.feat h3{font-size:1.12rem;margin:12px 0 6px}.feat p{margin:0;color:var(--muted);font-size:.96rem}
+  .outcomes{background:var(--bg-warm)}.olist{max-width:780px;margin:0 auto;display:grid;gap:14px}.o{display:flex;gap:18px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px}.o .tag{flex:none;width:96px;font-weight:800;color:var(--brand-deep)}.o p{margin:0;color:var(--muted);font-size:.97rem}
+  .faq-wrap{background:var(--bg)}.faq{max-width:780px;margin:0 auto;display:grid;gap:12px}details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px 20px}summary{cursor:pointer;font-weight:700;padding:16px 0;list-style:none}summary::-webkit-details-marker{display:none}summary::after{content:"+";float:right;color:var(--brand-deep);font-weight:800}details[open] summary::after{content:"–"}details p{margin:0 0 16px;color:var(--muted)}
+  .contact{background:var(--ink);color:#f3ede0}.contact .eyebrow{color:#fdc873}.contact .shead h2{color:#fff}.contact .shead p{color:#b9c0cb}.contact-card{max-width:720px;margin:0 auto;background:#191c22;border:1px solid #333842;border-radius:var(--radius);padding:26px;text-align:center}.contact-card a{color:#fdc873;font-weight:700}
+  footer{background:var(--ink);color:#cdd3dc;padding:54px 0 40px;text-align:center;border-top:1px solid #333842}.footer-brand{color:#fff;font-size:1.45rem;font-weight:900}.flinks{display:flex;gap:22px;justify-content:center;flex-wrap:wrap;margin:18px 0;font-weight:600}footer a{color:#fdc873}.fine{font-size:.84rem;color:#8d96a3;max-width:680px;margin:14px auto 0}.disc{font-size:.8rem;color:#7b8493;margin-top:18px}
+</style>
+</head>
+<body>
+<header><div class="wrap nav"><a class="wordmark" href="#top"><img src="favicon.svg" alt="" width="30" height="30">Viv</a><nav class="nav-links"><a class="hide-sm" href="#what">What it does</a><a class="hide-sm" href="#help">Help</a><a href="privacy.html">Privacy</a><a href="/">Animal Room</a></nav></div></header>
+<a id="top"></a>
+
+<section class="hero"><div class="wrap"><div class="eyebrow">For iPhone · no account · no app-run records server</div><h1>Care records for the animals<br><em>you actually live with.</em></h1><p class="lead">Viv keeps track of the care your reptiles and amphibians need, and what actually happened. Feeding, shedding, weights and UV readings — in your pocket, at the enclosure, where the work happens.</p><div class="badge">In private beta · coming to the App Store</div><p class="hero-note">No sign-up, no app-run records server, no subscription to use it. Export your portable care records whenever you want a copy elsewhere.</p></div></section>
+
+<section class="idea"><div class="wrap"><h2>Skipping is not the same as forgetting.</h2><p>Most trackers score you on streaks. An animal in blue does not want feeding, a brumating snake does not want disturbing, and a keeper who correctly leaves them alone should not be marked down for it. Viv is built around that distinction.</p></div></section>
+
+<section id="what"><div class="wrap"><div class="shead"><div class="eyebrow">What it does</div><h2>The day’s care, and the history behind it</h2><p>Organised around individual animals, with enough structure to show patterns over months rather than days.</p></div><div class="grid">
+<div class="feat"><div class="ico">📋</div><h3>Today’s list, generated</h3><p>Set a care plan once — feed every seven days, mist daily, full clean-out monthly — and Viv builds the day’s list from it. Nothing to maintain by hand.</p></div>
+<div class="feat"><div class="ico">📈</div><h3>Weight trends and shed history</h3><p>See weights as a chart, and keep each shed’s date and quality on the animal’s profile.</p></div>
+<div class="feat"><div class="ico">💡</div><h3>UV index, taken seriously</h3><p>Set a target UVI range on an enclosure’s lighting plan and record what your meter actually reads. Presets are starting points, not prescriptions.</p></div>
+<div class="feat"><div class="ico">👪</div><h3>Household groundwork</h3><p>Create keeper records now. Task attribution and allowance tallies are still being finished during the private beta.</p></div>
+<div class="feat"><div class="ico">🔔</div><h3>One quiet reminder</h3><p>An evening nudge naming what is still outstanding — not one buzz per task. A phone that buzzes six times at breakfast gets its notifications turned off.</p></div>
+<div class="feat"><div class="ico">📦</div><h3>Yours to take with you</h3><p>Your records stay on your iPhone unless you choose to export them. The current JSON export includes animals, care plans, task history, weights, sheds and notes; full restore and media export are still in development.</p></div>
+</div></div></section>
+
+<section class="outcomes"><div class="wrap"><div class="shead"><div class="eyebrow">The part worth knowing</div><h2>Four ways a task ends</h2><p>Care that did not need doing is not a failure, and Viv will not pretend otherwise.</p></div><div class="olist">
+<div class="o"><div class="tag">Done</div><p>It happened. Counts towards the husbandry score.</p></div>
+<div class="o"><div class="tag">Refused</div><p>You offered; they said no. Still counts as care given — the refusal is a husbandry fact worth keeping on its own.</p></div>
+<div class="o"><div class="tag">Skipped</div><p>It genuinely did not need doing — in blue, brumating, fed yesterday. Leaves the score entirely.</p></div>
+<div class="o"><div class="tag">Missed</div><p>It should have happened and did not. Counts against the score, because that is the point of recording it.</p></div>
+</div></div></section>
+
+<section class="faq-wrap" id="help"><div class="wrap"><div class="shead"><div class="eyebrow">Help</div><h2>Questions keepers ask</h2></div><div class="faq">
+<details><summary>Where are my records kept?</summary><p>Viv’s working copy is stored on your iPhone, with no account or app-run records server. Copies can also exist in the device backups and exports you choose. During the beta, Apple handles TestFlight session and diagnostic information and any feedback you voluntarily submit separately; see the <a href="privacy.html">privacy page</a> for details.</p></details>
+<details><summary>Can I use it on more than one device?</summary><p>Not yet. Syncing through your own iCloud account is planned. Until then each device keeps its own records.</p></details>
+<details><summary>What does the husbandry score mean?</summary><p>The share of accountable care that actually happened, over the last thirty days. Work you deliberately skipped is left out of it entirely. Work you missed stays in. Today’s outstanding tasks are not counted until the day is over, so opening the app at breakfast does not show you a low score built from work you still have hours to do.</p></details>
+<details><summary>Why is my score blank?</summary><p>Because there are no accountable care tasks to score in the current 30-day window. Tasks deliberately skipped are left out of the calculation.</p></details>
+<details><summary>Is the lighting guidance advice?</summary><p>No. The UV index presets are common starting points for common species, not prescriptions. Check your own animal against a current care sheet and your own meter, and talk to an exotics vet about anything health related.</p></details>
+<details><summary>How is this different from Shed?</summary><p><a href="/shed/">Shed</a> is the free, open-source, self-hosted version that runs on your own server and is shared across a household on your home network. Viv is a separate iPhone app that needs no server of your own. They are different tools for different setups, and Shed is not going anywhere.</p></details>
+<details><summary>How do I delete my data?</summary><p>Open an animal, choose the more-actions button, then delete the animal and its records. Deleting Viv from your iPhone removes the rest of its local data. Copies you deliberately exported or included in an iPhone backup remain wherever you put them until you delete those copies.</p></details>
+</div></div></section>
+
+<section class="contact"><div class="wrap"><div class="shead"><div class="eyebrow">Support</div><h2>Something wrong, or something missing?</h2><p>Bug reports and feature requests both welcome. It reaches a person, not a queue.</p></div><div class="contact-card"><p style="margin:0;font-size:1.1rem"><a href="mailto:animalroom@pm.me">animalroom@pm.me</a></p><p style="margin:12px 0 0;color:#aeb5c0">or <a href="https://www.instagram.com/thebioactivekeeper">@thebioactivekeeper on Instagram</a></p><p style="margin:18px 0 0;color:#aeb5c0;font-size:.9rem">If you are on the beta, the fastest route is Send Beta Feedback in TestFlight — you can include a screenshot, comments and device details.</p></div></div></section>
+
+<footer><div class="wrap"><div class="footer-brand">Viv</div><div class="flinks"><a href="privacy.html">Privacy</a><a href="mailto:animalroom@pm.me">Contact</a><a href="/shed/">Shed</a><a href="/bask/">Bask</a><a href="/haven/">Haven</a><a href="https://www.instagram.com/thebioactivekeeper">Instagram</a><a href="https://ko-fi.com/jlyfshhh">🦗 Buy crickets</a></div><p class="fine">Built by a keeper who wanted the record of good care to be as easy to keep as the care itself.</p><p class="disc">A recordkeeping aid, not a substitute for proper husbandry research or veterinary advice. Built with the help of AI, reviewed and tested by a human.</p></div></footer>
+</body>
+</html>

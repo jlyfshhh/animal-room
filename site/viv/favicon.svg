@@ -1,0 +1,24 @@
+<!-- A gecko's footprint: palm pad and five splayed toes with oversized tips.
+     Flat and two-tone to match the other section marks on the site, which are
+     built to stay legible at 16px rather than to reproduce the app icon.
+
+     The toe pads are deliberately smaller than they want to be. At the size a
+     browser tab actually renders this, pads that touch merge into one shape and
+     the foot reads as a blob, so each keeps about a pixel of daylight around it. -->
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <g stroke="#E0701A" stroke-width="4.5" stroke-linecap="round" fill="none">
+    <path d="M32 43 L12 30"/>
+    <path d="M32 43 L21.5 21"/>
+    <path d="M32 43 L32 18"/>
+    <path d="M32 43 L42.5 21"/>
+    <path d="M32 43 L52 30"/>
+  </g>
+  <ellipse cx="32" cy="44" rx="12" ry="10" fill="#E0701A"/>
+  <g fill="#F2A516">
+    <circle cx="10.5" cy="29" r="5.2"/>
+    <circle cx="21" cy="20" r="5.2"/>
+    <circle cx="32" cy="16.5" r="5.2"/>
+    <circle cx="43" cy="20" r="5.2"/>
+    <circle cx="53.5" cy="29" r="5.2"/>
+  </g>
+</svg>

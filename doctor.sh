@@ -89,12 +89,15 @@ if [[ -r /proc/meminfo ]]; then
   item "memory total" "${mem_total} MB"
   item "memory available" "${mem_avail} MB"
   item "swap total" "${swap_total} MB"
-  # Shed's worker peaks near 390 MB. Below that it will be killed while starting,
-  # which looks exactly like "installed fine, site can't be reached".
-  if [[ "$mem_total" -lt 900 ]]; then
-    printf '  ** This board has %s MB of RAM. Shed needs about 400 MB free just to\n' "$mem_total"
-    printf '     start, so 1 GB or more is the realistic minimum. Bask is far lighter\n'
-    printf '     and is fine here.\n'
+  # Free memory, not installed memory, is what decides whether Shed can start —
+  # a 1 GB board running a desktop passes any check on the total and then gets
+  # killed part way through starting, which looks exactly like "installed fine,
+  # site can't be reached". Report against what is actually available.
+  if [[ "$mem_avail" -lt 400 ]]; then
+    printf '  ** Only %s MB of this board'"'"'s %s MB is free. Shed needs about 400 MB\n' "$mem_avail" "$mem_total"
+    printf '     and Haven about 650 MB. A desktop session is the usual reason —\n'
+    printf '     Raspberry Pi OS Lite, or booting to the console, typically frees\n'
+    printf '     500-700 MB. Bask is far lighter and needs about 240 MB.\n'
   fi
 fi
 item "load average" "$(cut -d' ' -f1-3 /proc/loadavg 2>/dev/null)"
