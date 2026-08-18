@@ -73,6 +73,13 @@ SH
 
 cat >"$fake_bin/ip" <<'SH'
 #!/usr/bin/env bash
+# `ip -o link show eth0` is how the installer learns the MAC to quote for a
+# DHCP reservation; `ip -4 -o addr show` is how it learns the address.
+if [[ "$*" == *"link show"* ]]; then
+  [[ "${TEST_NO_MAC:-false}" == true ]] && exit 0
+  printf '2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP mode DEFAULT group default qlen 1000\\    link/ether b8:27:eb:4f:1a:c9 brd ff:ff:ff:ff:ff:ff\n'
+  exit 0
+fi
 if [[ "${TEST_NO_PRIVATE_IP:-false}" == true ]]; then
   exit 0
 fi
@@ -272,6 +279,7 @@ run_fixture_install() {
     ANIMAL_ROOM_SHED_INSTALLER="$fixtures/shed-installer.sh" \
     TEST_DOCKER_STATE="$scenario/docker" \
     TEST_NO_PRIVATE_IP="${TEST_NO_PRIVATE_IP:-false}" \
+    TEST_NO_MAC="${TEST_NO_MAC:-false}" \
     TEST_DOCKER_SUDO_ONLY="${TEST_DOCKER_SUDO_ONLY:-false}" \
     TEST_DOCKER_FAIL_APP="${TEST_DOCKER_FAIL_APP:-}" \
     TEST_DOCKER_FAILURE_KIND="${TEST_DOCKER_FAILURE_KIND:-oom}" \
@@ -372,6 +380,19 @@ grep -q '\.local' <<<"$with_ip_output" &&
   { echo "The .local name was offered even though a LAN address is known." >&2; exit 1; }
 grep -qi 'reserve it' <<<"$with_ip_output" ||
   { echo "The address-reservation note was not printed." >&2; exit 1; }
+grep -q 'b8:27:eb:4f:1a:c9' <<<"$with_ip_output" ||
+  { echo "The MAC address for the reservation was not printed." >&2; exit 1; }
+
+# A machine that will not report its MAC still installs; it just loses the
+# sentence naming it.
+no_mac="$work/no-mac"
+mkdir -p "$no_mac"
+write_meminfo "$no_mac/meminfo" 2097152
+no_mac_output="$(TEST_NO_MAC=true run_fixture_install "$no_mac" --bask)"
+grep -qi 'reserve it' <<<"$no_mac_output" ||
+  { echo "The reservation note vanished when the MAC was unavailable." >&2; exit 1; }
+grep -q 'MAC address' <<<"$no_mac_output" &&
+  { echo "An empty MAC was still announced." >&2; exit 1; }
 
 # No RFC1918 address is a normal state during early boot. It must fall back to
 # mDNS instead of exiting because grep returned 1 under pipefail.

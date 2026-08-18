@@ -601,13 +601,28 @@ host="$(hostname)"
 # What the .local name was really protecting against is the address changing on
 # a new DHCP lease. The note below addresses that directly, which is advice the
 # keeper can act on once instead of an address that may never work.
-lan_ip="$(
+lan_interface=""
+lan_ip=""
+while read -r interface address; do
+  [[ -n "$address" ]] || continue
+  lan_interface="$interface"
+  lan_ip="$address"
+  break
+done < <(
   ip -4 -o addr show scope global 2>/dev/null |
-    awk '$2 !~ /^(docker|br-|veth|virbr|tun|tap)/ {print $4}' |
-    cut -d/ -f1 |
-    grep -E '^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)' |
-    head -n 1 || true
-)"
+    awk '$2 !~ /^(docker|br-|veth|virbr|tun|tap)/ {split($4, a, "/"); print $2, a[1]}' |
+    grep -E ' (10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)' || true
+)
+
+# The reason people skip the DHCP reservation is that the router asks for a MAC
+# address and finding one is its own small errand. The interface holding the LAN
+# address is already known here, so the answer can just be printed. Best effort:
+# a missing MAC costs a sentence, not the install.
+lan_mac=""
+if [[ -n "$lan_interface" ]]; then
+  lan_mac="$(ip -o link show "$lan_interface" 2>/dev/null |
+    grep -oE 'link/ether [0-9a-f:]{17}' | awk '{print $2}' | head -n 1 || true)"
+fi
 address() {
   local port="$1" path="${2:-}"
   if [[ -n "$lan_ip" ]]; then
@@ -626,7 +641,8 @@ $( [[ "$select_bask" != true ]] || printf '  Bask:    %s' "$(address "$bask_port
 $( [[ "$select_shed" != true ]] || printf '  Shed:    %s' "$(address "$shed_port")" )
 $( [[ "$select_haven" != true ]] || printf '  Haven:   %s' "$(address "$bask_port" /room.html)" )
 
-$( [[ -z "$lan_ip" ]] || printf 'Bookmark that address. It comes from your router, so reserve it for this\nmachine in the router'"'"'s settings if you want it to stay the same.' )
+$( [[ -z "$lan_ip" ]] || { printf 'Bookmark that address. It comes from your router, so reserve it for this\nmachine in the router'"'"'s settings if you want it to stay the same'
+     [[ -z "$lan_mac" ]] && printf '.\n' || printf ',\nunder MAC address %s.\n' "$lan_mac"; } )
 
 Each app keeps its own database and settings in its data directory.
 Run this same installer again to update the selected apps without replacing data.
