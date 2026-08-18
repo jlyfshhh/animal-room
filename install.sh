@@ -593,8 +593,14 @@ rollback_armed=false
 host="$(hostname)"
 # A .local name needs mDNS, which Windows without Bonjour and a good number of
 # Android phones do not do — the address simply refuses to load, with nothing to
-# say why. The LAN address always works, so lead with it and offer the friendly
-# name second.
+# say why. So it is not offered alongside the LAN address: printing an address
+# the documentation then tells people not to use only invites the support
+# ticket. It is still printed when no LAN address can be determined, which
+# happens during early boot, because then it is the only answer available.
+#
+# What the .local name was really protecting against is the address changing on
+# a new DHCP lease. The note below addresses that directly, which is advice the
+# keeper can act on once instead of an address that may never work.
 lan_ip="$(
   ip -4 -o addr show scope global 2>/dev/null |
     awk '$2 !~ /^(docker|br-|veth|virbr|tun|tap)/ {print $4}' |
@@ -606,7 +612,6 @@ address() {
   local port="$1" path="${2:-}"
   if [[ -n "$lan_ip" ]]; then
     printf 'http://%s:%s%s\n' "$lan_ip" "$port" "$path"
-    printf '                    or http://%s.local:%s%s\n' "$host" "$port" "$path"
   else
     printf 'http://%s.local:%s%s\n' "$host" "$port" "$path"
   fi
@@ -620,6 +625,8 @@ Open these from any phone or computer on the same network:
 $( [[ "$select_bask" != true ]] || printf '  Bask:    %s' "$(address "$bask_port")" )
 $( [[ "$select_shed" != true ]] || printf '  Shed:    %s' "$(address "$shed_port")" )
 $( [[ "$select_haven" != true ]] || printf '  Haven:   %s' "$(address "$bask_port" /room.html)" )
+
+$( [[ -z "$lan_ip" ]] || printf 'Bookmark that address. It comes from your router, so reserve it for this\nmachine in the router'"'"'s settings if you want it to stay the same.' )
 
 Each app keeps its own database and settings in its data directory.
 Run this same installer again to update the selected apps without replacing data.

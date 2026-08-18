@@ -118,10 +118,15 @@ It works from every phone and computer on the network.
 | Shed | `http://LAN-ADDRESS:3000` | `~/shed/data` |
 | Haven room display | `http://LAN-ADDRESS:8080/room.html` | Reads Bask and Shed; stores no separate copy |
 
-The installer also offers `http://HOSTNAME.local:PORT` as an alternative. It is
-easier to remember, but it needs mDNS, which Windows without Bonjour and a good
-many Android phones do not do — there the address simply refuses to load, with
-nothing on screen to say why. Treat it as a convenience, not the way in.
+That address comes from your router's DHCP lease, so reserve it for the machine
+in the router's settings if you want the bookmark to keep working.
+
+The installer used to offer `http://HOSTNAME.local:PORT` alongside it. It no
+longer does: that name needs mDNS, which Windows without Bonjour and a good many
+Android phones do not do, and there the address simply refuses to load with
+nothing on screen to say why. It is still printed when no LAN address can be
+determined — during early boot, for instance — because then it is the only
+answer available.
 
 Set `ANIMAL_ROOM_HOME` or pass `--install-root PATH` to choose a different
 parent directory.

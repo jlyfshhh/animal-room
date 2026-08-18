@@ -359,6 +359,20 @@ done
 run_fixture_install "$low" --bask >/dev/null
 [[ "$(cat "$low/docker/bask.running")" == true ]] || { echo "Bask did not start on the low-memory fixture." >&2; exit 1; }
 
+# When a LAN address is known, the .local name must not be offered alongside it.
+# mDNS fails on Windows without Bonjour and on many Android phones, so printing
+# both hands the keeper a choice where one option silently does not load.
+with_ip="$work/with-ip"
+mkdir -p "$with_ip"
+write_meminfo "$with_ip/meminfo" 2097152
+with_ip_output="$(run_fixture_install "$with_ip" --bask)"
+grep -q 'http://192\.168\.50\.20:8080' <<<"$with_ip_output" ||
+  { echo "The LAN address was not printed." >&2; exit 1; }
+grep -q '\.local' <<<"$with_ip_output" &&
+  { echo "The .local name was offered even though a LAN address is known." >&2; exit 1; }
+grep -qi 'reserve it' <<<"$with_ip_output" ||
+  { echo "The address-reservation note was not printed." >&2; exit 1; }
+
 # No RFC1918 address is a normal state during early boot. It must fall back to
 # mDNS instead of exiting because grep returned 1 under pipefail.
 no_ip="$work/no-ip"
