@@ -644,7 +644,7 @@ $( [[ "$select_haven" != true ]] || printf '  Haven:   %s' "$(address "$bask_por
 $( [[ -z "$lan_ip" ]] || { printf 'Bookmark that address. It comes from your router, so reserve it for this\nmachine in the router'"'"'s settings if you want it to stay the same'
      [[ -z "$lan_mac" ]] && printf '.\n' || printf ',\nunder MAC address %s.\n' "$lan_mac"; } )
 
-$( [[ "$select_shed" != true ]] || printf 'The first time you open Shed it asks for a one-time setup token. It is kept\nin a hidden file, so a file manager will not list it unless you ask it to\nshow hidden files. Print the token with:\n\n  grep SHED_BOOTSTRAP_TOKEN %%s\n' "$shed_env" )
+$( [[ "$select_shed" != true ]] || printf 'The first time you open Shed it asks for a one-time setup token. It is kept\nin a hidden file, so a file manager will not list it unless you ask it to\nshow hidden files. Print the token with:\n\n  grep SHED_BOOTSTRAP_TOKEN %s\n' "$shed_env" )
 
 Each app keeps its own database and settings in its data directory.
 Run this same installer again to update the selected apps without replacing data.

@@ -416,6 +416,34 @@ grep -q '^SHED_DISPLAY_URL=http://host.docker.internal:3333/api/display$' "$port
   exit 1
 }
 
+# The setup token is the one thing a new keeper needs and cannot guess, and it
+# sits in a hidden file that a file manager will not list. The summary shipped
+# once printing the printf format string instead of the path, which is worse
+# than saying nothing, so assert the resolved path rather than the wording.
+token="$work/setup-token"
+mkdir -p "$token/apps/shed/data"
+write_meminfo "$token/meminfo" 2097152
+token_output="$(run_fixture_install "$token" --shed)"
+grep -qF "grep SHED_BOOTSTRAP_TOKEN $token/apps/shed/.env" <<<"$token_output" || {
+  echo "The summary did not print the command that reads the setup token." >&2
+  exit 1
+}
+if grep -q '%s' <<<"$token_output"; then
+  echo "The summary printed a printf format string instead of a path." >&2
+  exit 1
+fi
+
+# Bask has no setup token, so a Bask-only install must not send anyone looking
+# for one.
+no_token="$work/no-setup-token"
+mkdir -p "$no_token/apps/bask/data"
+write_meminfo "$no_token/meminfo" 2097152
+no_token_output="$(run_fixture_install "$no_token" --bask)"
+if grep -q 'SHED_BOOTSTRAP_TOKEN' <<<"$no_token_output"; then
+  echo "A Bask-only install mentioned Shed's setup token." >&2
+  exit 1
+fi
+
 # A newly installed Docker daemon commonly works only through sudo until the
 # next login. Every unified-installer Docker operation must follow that path.
 sudo_only="$work/sudo-only"
