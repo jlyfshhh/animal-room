@@ -151,8 +151,29 @@ for app in shed bask; do
   # it cannot read, and under `set -o pipefail` that would append a second line
   # to the value.
   if [[ -d "$dir/data" ]]; then
-    data_size=$(du -sh "$dir/data" 2>/dev/null | cut -f1)
-    item "data dir" "${data_size:-present (size unreadable)}"
+    # The app owns this directory as its own uid and keeps it 0700, so whoever
+    # runs the report usually cannot read inside it. du says 4.0K in that case —
+    # the directory entry alone — which reads as "empty" for a database that may
+    # be tens of megabytes. Say which it is rather than print a wrong number.
+    if [[ -r "$dir/data" && -x "$dir/data" ]]; then
+      data_size=$(du -sh "$dir/data" 2>/dev/null | cut -f1)
+      item "data dir" "${data_size:-present (size unreadable)}"
+    else
+      item "data dir" "present, not readable as $(id -un) — size unknown"
+    fi
+    # Numeric owner and mode, because the app runs as a uid inside a container
+    # and a name means nothing across that boundary. "unable to open database
+    # file" almost always turns out to be this line disagreeing with the uid
+    # the container runs as, and asking for it separately costs a round trip.
+    data_owner=$(stat -c '%u:%g %a' "$dir/data" 2>/dev/null \
+      || stat -f '%u:%g %Lp' "$dir/data" 2>/dev/null)
+    item "data dir owner" "${data_owner:-unreadable} (you are $(id -u):$(id -g))"
+    if [[ -e "$dir/data/readings.db" || -e "$dir/data/config.json" ]]; then
+      db_owner=$(stat -c '%u:%g %a' "$dir/data/readings.db" 2>/dev/null \
+        || stat -c '%u:%g %a' "$dir/data/config.json" 2>/dev/null \
+        || stat -f '%u:%g %Lp' "$dir/data/readings.db" 2>/dev/null)
+      item "data file owner" "${db_owner:-unreadable}"
+    fi
   else
     item "data dir" "missing"
   fi
@@ -269,6 +290,24 @@ item "LAN address(es)" "${lan:-none found (private ranges only)}"
 if command -v ss >/dev/null 2>&1; then
   item "listening" "$(ss -ltn 2>/dev/null | awk '$4 ~ /:(3000|8080)$/ {print $4}' | tr '\n' ' ')"
 fi
+# Ubuntu-family distributions mediate D-Bus through AppArmor where Debian and
+# Raspberry Pi OS do not, and Bask's scanner reaches BlueZ over the system bus.
+# When that is denied the scanner runs and simply never sees a sensor, which
+# looks like a hardware problem and is not one.
+if [[ -d /sys/kernel/security/apparmor ]]; then
+  apparmor_state="enabled"
+  if command -v aa-status >/dev/null 2>&1; then
+    profiles=$(aa-status --profiled 2>/dev/null || sudo -n aa-status --profiled 2>/dev/null || true)
+    [[ -z "$profiles" ]] || apparmor_state="enabled, ${profiles} profiles loaded"
+  fi
+  item "AppArmor" "$apparmor_state"
+  if docker inspect bask-scanner --format '{{.AppArmorProfile}}' >/dev/null 2>&1; then
+    item "scanner profile" "$(docker inspect bask-scanner --format '{{if .AppArmorProfile}}{{.AppArmorProfile}}{{else}}(none){{end}}' 2>/dev/null)"
+  fi
+else
+  item "AppArmor" "not enabled"
+fi
+
 item "mDNS (.local)" "$(command -v avahi-daemon >/dev/null 2>&1 && echo 'avahi installed' || echo 'avahi NOT installed — use the IP address instead of hostname.local')"
 
 cat <<'NOTE'
