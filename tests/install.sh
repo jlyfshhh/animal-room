@@ -416,63 +416,42 @@ grep -q '^SHED_DISPLAY_URL=http://host.docker.internal:3333/api/display$' "$port
   exit 1
 }
 
-# The setup token is the one thing a new keeper needs and cannot guess, and it
-# sits in a hidden file that a file manager will not list. The summary shipped
-# once printing the printf format string instead of the path, which is worse
-# than saying nothing, so assert the resolved path rather than the wording.
-token="$work/setup-token"
-mkdir -p "$token/apps/shed/data"
-write_meminfo "$token/meminfo" 2097152
-token_output="$(run_fixture_install "$token" --shed)"
-grep -qF "grep SHED_BOOTSTRAP_TOKEN $token/apps/shed/.env" <<<"$token_output" || {
-  echo "The summary did not print the command that reads the setup token." >&2
+# Each app has its own key, they are not interchangeable, and both are shown
+# only at install time. A keeper who assumed one key opened both spent a day
+# trying each in the other, so the summary names them per app and prints the
+# values rather than telling anyone where to go looking.
+keys="$work/keeper-keys"
+mkdir -p "$keys/apps/bask/data" "$keys/apps/shed/data"
+write_meminfo "$keys/meminfo" 2097152
+printf 'BASK_PORT=8080\nBASK_DATA_PATH=./data\nBASK_KEEPER_KEY=bask-key-value\n' >"$keys/apps/bask/.env"
+printf 'SHED_PORT=3000\nSHED_DATA_PATH=./data\nSHED_BOOTSTRAP_TOKEN=shed-key-value\n' >"$keys/apps/shed/.env"
+keys_output="$(run_fixture_install "$keys" --haven)"
+grep -qF "Bask:  bask-key-value" <<<"$keys_output" || {
+  echo "The summary did not print the Bask Head Keeper key." >&2
   exit 1
 }
-if grep -q '%s' <<<"$token_output"; then
-  echo "The summary printed a printf format string instead of a path." >&2
+grep -qF "Shed:  shed-key-value" <<<"$keys_output" || {
+  echo "The summary did not print the Shed Head Keeper key." >&2
+  exit 1
+}
+if grep -q '%s' <<<"$keys_output"; then
+  echo "The summary printed a printf format string instead of a key." >&2
   exit 1
 fi
 
-# The Bask Head Keeper key is stored only as a hash and cannot be read back, so
-# a keeper who misses it during the install has to be told how to get another.
-# The unified summary never mentioned the key at all, which is how a real user
-# ended up locked out of Bask with no way forward.
-keeper="$work/keeper-key"
-mkdir -p "$keeper/apps/bask/data"
-write_meminfo "$keeper/meminfo" 2097152
-keeper_output="$(run_fixture_install "$keeper" --bask)"
-grep -qF "$keeper/apps/bask/data/config.json" <<<"$keeper_output" || {
-  echo "The summary did not say where the Bask Head Keeper record lives." >&2
+# A single-app install must not name a key belonging to an app that is not
+# there, nor point at a file that will not exist.
+solo="$work/keeper-keys-solo"
+mkdir -p "$solo/apps/bask/data"
+write_meminfo "$solo/meminfo" 2097152
+printf 'BASK_PORT=8080\nBASK_DATA_PATH=./data\nBASK_KEEPER_KEY=bask-only-key\n' >"$solo/apps/bask/.env"
+solo_output="$(run_fixture_install "$solo" --bask)"
+grep -qF "Bask:  bask-only-key" <<<"$solo_output" || {
+  echo "A Bask-only install did not print its key." >&2
   exit 1
 }
-grep -qi "head keeper" <<<"$keeper_output" || {
-  echo "The summary never mentioned the Bask Head Keeper key." >&2
-  exit 1
-}
-if grep -q '%s' <<<"$keeper_output"; then
-  echo "The summary printed a printf format string instead of a path." >&2
-  exit 1
-fi
-
-# Shed has no Head Keeper key of its own, so a Shed-only install must not point
-# anyone at a Bask config file that will not exist.
-no_keeper="$work/no-keeper-key"
-mkdir -p "$no_keeper/apps/shed/data"
-write_meminfo "$no_keeper/meminfo" 2097152
-no_keeper_output="$(run_fixture_install "$no_keeper" --shed)"
-if grep -qi "head keeper key" <<<"$no_keeper_output"; then
-  echo "A Shed-only install mentioned the Bask Head Keeper key." >&2
-  exit 1
-fi
-
-# Bask has no setup token, so a Bask-only install must not send anyone looking
-# for one.
-no_token="$work/no-setup-token"
-mkdir -p "$no_token/apps/bask/data"
-write_meminfo "$no_token/meminfo" 2097152
-no_token_output="$(run_fixture_install "$no_token" --bask)"
-if grep -q 'SHED_BOOTSTRAP_TOKEN' <<<"$no_token_output"; then
-  echo "A Bask-only install mentioned Shed's setup token." >&2
+if grep -q "SHED_BOOTSTRAP_TOKEN" <<<"$solo_output"; then
+  echo "A Bask-only install pointed at Shed's key file." >&2
   exit 1
 fi
 

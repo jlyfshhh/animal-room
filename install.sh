@@ -638,15 +638,11 @@ Installation complete.
 Open these from any phone or computer on the same network:
 
 $( [[ "$select_bask" != true ]] || printf '  Bask:    %s' "$(address "$bask_port")" )
-$( [[ "$select_bask" != true ]] || printf 'The Bask setup screen (sensors, enclosures, ranges) is protected by a Head Keeper\nkey, printed during the Bask install above. It is shown once and stored only as a\nhash, so it cannot be read back later. If you missed it, delete the "keeper" block\nfrom %s/bask/data/config.json and run this installer again to be given a new one.\n' "$install_root" )
-
 $( [[ "$select_shed" != true ]] || printf '  Shed:    %s' "$(address "$shed_port")" )
 $( [[ "$select_haven" != true ]] || printf '  Haven:   %s' "$(address "$bask_port" /room.html)" )
 
 $( [[ -z "$lan_ip" ]] || { printf 'Bookmark that address. It comes from your router, so reserve it for this\nmachine in the router'"'"'s settings if you want it to stay the same'
      [[ -z "$lan_mac" ]] && printf '.\n' || printf ',\nunder MAC address %s.\n' "$lan_mac"; } )
-
-$( [[ "$select_shed" != true ]] || printf 'The first time you open Shed it asks for a one-time setup token. It is kept\nin a hidden file, so a file manager will not list it unless you ask it to\nshow hidden files. Print the token with:\n\n  grep SHED_BOOTSTRAP_TOKEN %s\n' "$shed_env" )
 
 Each app keeps its own database and settings in its data directory.
 Run this same installer again to update the selected apps without replacing data.
@@ -654,3 +650,25 @@ Run this same installer again to update the selected apps without replacing data
 If an address will not load, run this and send us what it prints:
   curl -fsSL https://animalroom.app/doctor.sh | bash
 SUMMARY
+
+# Last, and on every install. Each app keeps its own key, in its own .env, and
+# the two are not interchangeable — assuming they were cost a keeper a day of
+# trying one in the other. Reading them back out here means missing a line of
+# scrollback is no longer permanent.
+bask_key=""
+shed_key=""
+[[ "$select_bask" != true ]] || bask_key="$(get_env_value "$install_root/bask/.env" BASK_KEEPER_KEY)"
+[[ "$select_shed" != true ]] || shed_key="$(get_env_value "$shed_env" SHED_BOOTSTRAP_TOKEN)"
+if [[ -n "$bask_key" || -n "$shed_key" ]]; then
+  echo "------------------------------------------------------------"
+  echo "  Head Keeper keys — save these"
+  echo
+  [[ -z "$bask_key" ]] || printf '  Bask:  %s\n' "$bask_key"
+  [[ -z "$shed_key" ]] || printf '  Shed:  %s\n' "$shed_key"
+  echo
+  echo "  Each app has its own key; they are not interchangeable."
+  echo "  Find them again with:"
+  [[ -z "$bask_key" ]] || echo "    grep BASK_KEEPER_KEY $install_root/bask/.env"
+  [[ -z "$shed_key" ]] || echo "    grep SHED_BOOTSTRAP_TOKEN $shed_env"
+  echo "------------------------------------------------------------"
+fi
