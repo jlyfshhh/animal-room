@@ -638,6 +638,8 @@ Installation complete.
 Open these from any phone or computer on the same network:
 
 $( [[ "$select_bask" != true ]] || printf '  Bask:    %s' "$(address "$bask_port")" )
+$( [[ "$select_bask" != true ]] || printf 'The Bask setup screen (sensors, enclosures, ranges) is protected by a Head Keeper\nkey, printed during the Bask install above. It is shown once and stored only as a\nhash, so it cannot be read back later. If you missed it, delete the "keeper" block\nfrom %s/bask/data/config.json and run this installer again to be given a new one.\n' "$install_root" )
+
 $( [[ "$select_shed" != true ]] || printf '  Shed:    %s' "$(address "$shed_port")" )
 $( [[ "$select_haven" != true ]] || printf '  Haven:   %s' "$(address "$bask_port" /room.html)" )
 

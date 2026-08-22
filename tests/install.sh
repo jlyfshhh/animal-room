@@ -433,6 +433,38 @@ if grep -q '%s' <<<"$token_output"; then
   exit 1
 fi
 
+# The Bask Head Keeper key is stored only as a hash and cannot be read back, so
+# a keeper who misses it during the install has to be told how to get another.
+# The unified summary never mentioned the key at all, which is how a real user
+# ended up locked out of Bask with no way forward.
+keeper="$work/keeper-key"
+mkdir -p "$keeper/apps/bask/data"
+write_meminfo "$keeper/meminfo" 2097152
+keeper_output="$(run_fixture_install "$keeper" --bask)"
+grep -qF "$keeper/apps/bask/data/config.json" <<<"$keeper_output" || {
+  echo "The summary did not say where the Bask Head Keeper record lives." >&2
+  exit 1
+}
+grep -qi "head keeper" <<<"$keeper_output" || {
+  echo "The summary never mentioned the Bask Head Keeper key." >&2
+  exit 1
+}
+if grep -q '%s' <<<"$keeper_output"; then
+  echo "The summary printed a printf format string instead of a path." >&2
+  exit 1
+fi
+
+# Shed has no Head Keeper key of its own, so a Shed-only install must not point
+# anyone at a Bask config file that will not exist.
+no_keeper="$work/no-keeper-key"
+mkdir -p "$no_keeper/apps/shed/data"
+write_meminfo "$no_keeper/meminfo" 2097152
+no_keeper_output="$(run_fixture_install "$no_keeper" --shed)"
+if grep -qi "head keeper key" <<<"$no_keeper_output"; then
+  echo "A Shed-only install mentioned the Bask Head Keeper key." >&2
+  exit 1
+fi
+
 # Bask has no setup token, so a Bask-only install must not send anyone looking
 # for one.
 no_token="$work/no-setup-token"
