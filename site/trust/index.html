@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Trust and safety — Animal Room</title>
+  <meta name="description" content="See where Animal Room data stays, what can connect to the internet, and how Bask, Shed, and Haven are reviewed and tested.">
+  <meta name="theme-color" content="#101310">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; base-uri 'none'; form-action 'none'">
+  <meta name="color-scheme" content="dark light">
+  <meta name="referrer" content="no-referrer">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="canonical" href="https://animalroom.app/trust/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Animal Room">
+  <meta property="og:title" content="Trust and safety — Animal Room">
+  <meta property="og:description" content="Clear data boundaries, public source, automated checks, release history, and human review.">
+  <meta property="og:url" content="https://animalroom.app/trust/">
+  <meta property="og:image" content="https://animalroom.app/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Trust and safety — Animal Room">
+  <meta name="twitter:description" content="The evidence and limits behind Bask, Shed, and Haven.">
+  <meta name="twitter:image" content="https://animalroom.app/og.png">
+  <style>
+    :root{--forest:#17382d;--forest-2:#214c3d;--moss:#3f755a;--leaf:#77a77e;--amber:#f2a516;--cream:#fff6e2;--paper:#fffdf8;--ink:#22262e;--muted:#5d6872;--line:#e8e4d9;--ok:#3ca56a;--radius:20px;--max:1080px;--font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);line-height:1.62;-webkit-font-smoothing:antialiased}a{color:var(--forest-2);text-decoration:none}a:hover{text-decoration:underline}a:focus-visible{outline:3px solid var(--amber);outline-offset:3px}h1,h2,h3{margin:0;line-height:1.12;letter-spacing:-.025em}.wrap{width:min(var(--max),calc(100% - 40px));margin:auto}.eyebrow{text-transform:uppercase;letter-spacing:.14em;font-size:.77rem;font-weight:850;color:var(--moss)}
+    header{position:sticky;top:0;z-index:20;border-bottom:1px solid rgba(23,56,45,.1);background:rgba(255,253,248,.92);backdrop-filter:blur(14px)}.nav{min-height:68px;display:flex;align-items:center;justify-content:space-between;gap:20px}.brand{display:flex;align-items:center;gap:10px;font-weight:900;font-size:1.22rem;color:var(--forest);letter-spacing:-.04em}.brand:hover{text-decoration:none}.brand-mark{width:36px;height:36px;display:grid;place-items:center;border-radius:12px;background:var(--forest);color:#d6f0d7}.links{display:flex;align-items:center;gap:20px;font-size:.93rem;font-weight:750}.links a{color:var(--ink)}.links .nav-cta{background:var(--forest);color:#fff;padding:10px 17px;border-radius:999px}.links .nav-cta:hover{background:var(--forest-2);text-decoration:none}
+    .hero{padding:76px 0 66px;background:radial-gradient(circle at 75% 8%,rgba(119,167,126,.24),transparent 36%),linear-gradient(180deg,var(--cream),var(--paper));text-align:center}.hero h1{font-size:clamp(2.35rem,5.8vw,4.25rem);font-weight:900;color:var(--forest);margin-top:10px}.lead{font-size:clamp(1.06rem,2.3vw,1.28rem);color:var(--muted);max-width:760px;margin:22px auto 0}.buttons{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:28px}.button{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:13px 20px;font-weight:850;border:2px solid transparent}.button.primary{background:var(--forest);color:#fff}.button.secondary{background:#fff;color:var(--ink);border-color:var(--line)}.button:hover{text-decoration:none}.button.primary:hover{background:var(--forest-2)}.button.secondary:hover{border-color:var(--leaf)}
+    section{padding:76px 0}.section-head{text-align:center;max-width:720px;margin:0 auto 42px}.section-head h2{font-size:clamp(1.75rem,4vw,2.5rem);margin-top:8px}.section-head p{color:var(--muted);font-size:1.05rem;margin:14px 0 0}.boundaries{display:grid;grid-template-columns:repeat(3,1fr);gap:17px}.boundary{border:1px solid var(--line);border-radius:var(--radius);background:#fff;padding:25px}.boundary .icon{font-size:1.6rem}.boundary h3{font-size:1.1rem;margin:12px 0 7px}.boundary p{color:var(--muted);font-size:.95rem;margin:0}.boundary strong{color:var(--forest)}
+    .data{background:var(--forest);color:#edf7f1}.data-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}.data-card{background:#21473a;border:1px solid #416b59;border-radius:var(--radius);padding:26px}.data-card h3{font-size:1.3rem}.data-card p{color:#bed3c7;margin:10px 0 0}.data-card ul{padding-left:20px;color:#dcece3;margin:15px 0 0}.data-card li{margin:7px 0}.data-card a{color:#ffe09d;font-weight:800}
+    .evidence{background:#f2f6ef}.project-list{display:grid;gap:16px}.project{display:grid;grid-template-columns:180px 1fr;gap:20px;background:#fff;border:1px solid #dae5da;border-radius:var(--radius);padding:25px}.project-name{font-size:1.25rem;font-weight:900;color:var(--forest)}.project-name span{display:block;color:var(--muted);font-weight:600;font-size:.76rem;margin-top:5px}.project p{color:var(--muted);margin:0}.evidence-links{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}.evidence-links a{border:1px solid #d6e1d6;background:#f8faf7;border-radius:999px;padding:7px 11px;font-size:.82rem;font-weight:800}.evidence-links a:hover{border-color:var(--leaf);text-decoration:none}
+    .ai-grid{display:grid;grid-template-columns:.85fr 1.15fr;gap:30px;align-items:start}.ai-note{background:var(--cream);border:1px solid #eddfbd;border-radius:var(--radius);padding:26px}.ai-note h3{font-size:1.3rem}.ai-note p{color:var(--muted);margin:12px 0 0}.checks{display:grid;gap:12px}.check{display:grid;grid-template-columns:auto 1fr;gap:13px;border-bottom:1px solid var(--line);padding:0 0 13px}.check:last-child{border:0}.check i{width:25px;height:25px;border-radius:50%;background:#dceee0;color:var(--forest);display:grid;place-items:center;font-style:normal;font-weight:900}.check b{display:block}.check span{display:block;color:var(--muted);font-size:.92rem;margin-top:2px}
+    .limits{max-width:790px;margin:auto;border:1px solid var(--line);border-radius:var(--radius);padding:29px;background:#fff}.limits h2{font-size:1.5rem}.limits p{color:var(--muted);margin:12px 0 0}.limits ul{color:var(--muted);padding-left:20px}.limits li{margin:7px 0}.limits a{font-weight:800}
+    footer{background:var(--forest);color:#bbcec4;padding:50px 0;text-align:center}.footer-brand{font-size:1.45rem;color:#fff;font-weight:900}.footer-links{display:flex;justify-content:center;gap:20px;flex-wrap:wrap;margin:16px 0}.footer-links a{color:#e1c67f;font-weight:750}.footer-note{font-size:.84rem;color:#94aca0;margin:9px auto 0;max-width:720px}
+    @media(max-width:820px){.boundaries{grid-template-columns:1fr}.data-grid,.ai-grid{grid-template-columns:1fr}.project{grid-template-columns:1fr}}
+    @media(max-width:620px){.links .hide-small{display:none}.links{gap:12px}.hero{padding-top:54px}section{padding:60px 0}.project{padding:21px}}
+  </style>
+  <script src="/assets/theme-init.js"></script>
+  <link rel="stylesheet" href="/assets/site.css">
+  <script src="/assets/site.js" defer></script>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="brand" href="/"><span class="brand-mark">🌿</span>Animal Room</a>
+      <nav class="links" aria-label="Main navigation"><a class="hide-small" href="/demo/">Demo</a><a class="hide-small" href="https://github.com/jlyfshhh">Source</a><a href="/support/">Support</a><a class="nav-cta" href="/#install">Install</a></nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap"><div class="eyebrow">Open by design</div><h1>What runs, where data stays, and how changes are tested.</h1><p class="lead">Animal Room handles care records and habitat data. These are the boundaries, checks, and limits you can verify for yourself.</p><div class="buttons"><a class="button primary" href="https://github.com/jlyfshhh">Read the source</a><a class="button secondary" href="/demo/">Try the sample demo</a></div></div>
+    </section>
+
+    <section aria-labelledby="boundaries-heading">
+      <div class="wrap"><div class="section-head"><div class="eyebrow">Data boundaries</div><h2 id="boundaries-heading">Local first, by default.</h2><p>Core monitoring and care records need no Animal Room account or cloud service.</p></div><div class="boundaries">
+        <article class="boundary"><div class="icon">🏠</div><h3>Records stay on your machine</h3><p>Shed stores its database in its local data directory. Bask stores local settings and readings. <strong>Neither app contains product analytics or telemetry.</strong></p></article>
+        <article class="boundary"><div class="icon">📡</div><h3>The Bluetooth scanner only listens</h3><p>Bask reads supported sensor broadcasts. It does not make a sensor a network gateway, pair with phones, or accept Bluetooth commands.</p></article>
+        <article class="boundary"><div class="icon">🔐</div><h3>Haven uses a limited feed</h3><p>The room display reads token-protected care totals and unfinished work. It has no write access and excludes household identities and access codes.</p></article>
+      </div></div>
+    </section>
+
+    <section class="data" aria-labelledby="data-heading">
+      <div class="wrap"><div class="section-head"><div class="eyebrow" style="color:#9ec9aa">Outside connections</div><h2 id="data-heading">Nothing extra connects unless you enable it.</h2><p style="color:#bed3c7">Installation, updates, and optional integrations are the exceptions to normal local use.</p></div><div class="data-grid">
+        <article class="data-card"><h3>Normal operation</h3><ul><li>Care records, schedules, readings, and the Haven display stay on the local network.</li><li>The public website has no analytics, advertisements, account system, or third-party embeds.</li><li>The interactive demo runs only in the page and sends no demo actions anywhere.</li><li>Exports and backups are created for the keeper to store where they choose.</li></ul></article>
+        <article class="data-card"><h3>Deliberate outside connections</h3><ul><li>Installation and updates download scripts or container images from the public project repositories.</li><li>Optional phone alerts and smart-device integrations contact the provider the keeper configures.</li><li>GitHub, Instagram, and Ko-fi links leave this site only when clicked.</li><li>Remote access is not enabled by the installer; do not expose app ports directly to the internet.</li></ul></article>
+      </div></div>
+    </section>
+
+    <section class="evidence" aria-labelledby="evidence-heading">
+      <div class="wrap"><div class="section-head"><div class="eyebrow">Public evidence</div><h2 id="evidence-heading">Code and tests you can inspect.</h2><p>These links open the current source, test runs, releases, and security pages. Passing checks reduce risk; they do not prove software is defect-free.</p></div><div class="project-list">
+        <article class="project"><div class="project-name">☀️ Bask<span>Climate monitoring</span></div><div><p>Web dashboard, local API, Bluetooth scanner, Docker packaging, targets, alerts, and integrations.</p><div class="evidence-links"><a href="https://github.com/jlyfshhh/bask">Source</a><a href="https://github.com/jlyfshhh/bask/actions/workflows/test.yml">Automated checks</a><a href="https://github.com/jlyfshhh/bask/releases">Releases</a><a href="https://github.com/jlyfshhh/bask/security">Security overview</a></div></div></article>
+        <article class="project"><div class="project-name">🐍 Shed<span>Husbandry records</span></div><div><p>Care scheduling, household roles, task history, animals, weights, equipment, imports, exports, and backups.</p><div class="evidence-links"><a href="https://github.com/jlyfshhh/shed">Source</a><a href="https://github.com/jlyfshhh/shed/actions/workflows/test.yml">Automated checks</a><a href="https://github.com/jlyfshhh/shed/releases">Releases</a><a href="https://github.com/jlyfshhh/shed/security">Security overview</a></div></div></article>
+        <article class="project"><div class="project-name">🌿 Haven<span>Installer &amp; combined display</span></div><div><p>Unified installation, health verification, rollback behavior, diagnostics, backup tooling, and the limited Bask-to-Shed bridge.</p><div class="evidence-links"><a href="https://github.com/jlyfshhh/animal-room">Source</a><a href="https://github.com/jlyfshhh/animal-room/actions/workflows/test.yml">Automated checks</a><a href="https://github.com/jlyfshhh/animal-room/releases">Releases</a><a href="https://github.com/jlyfshhh/animal-room/security/policy">Security policy</a></div></div></article>
+      </div></div>
+    </section>
+
+    <section aria-labelledby="ai-heading">
+      <div class="wrap ai-grid"><div class="ai-note"><div class="eyebrow">Development process</div><h3 id="ai-heading">AI-assisted, human reviewed.</h3><p>AI tools help draft, investigate, and test. A human keeper chooses the behavior, reviews the changes, runs the real system, and decides what gets published.</p><p>This is not formal certification or an independent audit. It is a transparent development process with public source and test history.</p></div><div class="checks">
+        <div class="check"><i>✓</i><div><b>Automated project checks</b><span>Each repository runs its own checks on proposed and published changes. The exact workflow and result history are public above.</span></div></div>
+        <div class="check"><i>✓</i><div><b>Installer failure testing</b><span>The unified installer exercises selection, memory limits, health failures, broken integration, custom ports, repeated updates, and rollback without deleting data.</span></div></div>
+        <div class="check"><i>✓</i><div><b>Privacy scanning</b><span>The public repository checks for private identities and known secret-like material before its site deploys.</span></div></div>
+        <div class="check"><i>✓</i><div><b>Real-room use</b><span>Bask, Shed, and Haven began as tools for the keeper&rsquo;s own animal room and continue to be exercised there between releases.</span></div></div>
+        <div class="check"><i>✓</i><div><b>Correctable public record</b><span>Source, issues, releases, and change history stay visible so concrete reports can be reproduced and fixed.</span></div></div>
+      </div></div>
+    </section>
+
+    <section>
+      <div class="wrap"><div class="limits"><h2>Known limits and responsible use</h2><p>No self-hosted app can make an unsafe network safe, and monitoring software is not a substitute for looking at the animal or checking equipment directly.</p><ul><li>Use the apps on a trusted home network unless you maintain your own secure remote-access layer.</li><li>Keep the host operating system and Animal Room containers updated.</li><li>Treat sensor data as an aid; verify surprising or safety-critical readings with another instrument.</li><li>Keep backups somewhere other than the machine running the apps.</li><li>Species targets and schedules still need reputable husbandry sources and veterinary guidance where appropriate.</li></ul><p>Found a concrete security problem? Read the <a href="https://github.com/jlyfshhh/animal-room/security/policy">security policy</a> and report it privately. Ordinary bugs belong in the affected project&rsquo;s issue tracker.</p></div></div>
+    </section>
+  </main>
+
+  <footer><div class="wrap"><div class="footer-brand">🌿 Animal Room</div><div class="footer-links"><a href="/demo/">Demo</a><a href="/support/">Support Animal Room</a><a href="/bask/">Bask</a><a href="/shed/">Shed</a><a href="/haven/">Haven</a><a href="https://www.instagram.com/thebioactivekeeper">Instagram</a></div><p class="footer-note">Inspect the source, check the test runs, read the releases, and report concrete problems.</p></div></footer>
+</body>
+</html>

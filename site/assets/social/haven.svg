@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0e120f"/><stop offset="1" stop-color="#192019"/></linearGradient><radialGradient id="g" cx="1" cy="0" r="1"><stop stop-color="#76906e" stop-opacity=".24"/><stop offset="1" stop-color="#76906e" stop-opacity="0"/></radialGradient></defs>
+  <rect width="1200" height="630" fill="url(#bg)"/><rect width="1200" height="630" fill="url(#g)"/>
+  <g font-family="Inter,Arial,sans-serif">
+    <g transform="translate(64 46)"><rect width="44" height="44" rx="13" fill="#9fb68d"/><path d="M12 31V20m10 11V13m10 18V23" stroke="#142014" stroke-width="3" stroke-linecap="round"/><text x="58" y="31" fill="#f4f1e9" font-size="31" font-weight="750">Haven</text><text x="163" y="30" fill="#8f988c" font-size="16">Bask + Shed</text></g>
+    <g transform="translate(850 51)"><circle cx="7" cy="7" r="5" fill="#a6bd92"/><text x="20" y="12" fill="#aeb5aa" font-size="13" font-weight="700" letter-spacing="1">LIVE ROOM VIEW</text></g>
+    <text x="64" y="130" fill="#f4f1e9" font-size="40" font-weight="650" letter-spacing="-1">Climate and care, together.</text>
+    <text x="64" y="162" fill="#aeb5aa" font-size="18">One calm dashboard for the room.</text>
+
+    <g transform="translate(64 194)">
+      <rect width="1072" height="372" rx="24" fill="#1a201a" stroke="#374234"/>
+      <g transform="translate(24 20)"><text fill="#f1eee6" font-size="22" font-weight="700">Good morning.</text><text y="25" fill="#9ea59b" font-size="13">3 enclosures stable · 1 climate watch · 2 care tasks remaining</text></g>
+      <g transform="translate(776 18)"><rect width="124" height="42" rx="13" fill="#202720"/><text x="15" y="18" fill="#9fba8d" font-size="11" font-weight="700">CLIMATE</text><text x="15" y="34" fill="#e7e4dc" font-size="14">3 stable · 1 watch</text><rect x="136" width="136" height="42" rx="13" fill="#24231d"/><text x="151" y="18" fill="#d4a064" font-size="11" font-weight="700">CARE</text><text x="151" y="34" fill="#e7e4dc" font-size="14">3 done · 2 due</text></g>
+
+      <g transform="translate(24 80)">
+        <rect width="660" height="262" rx="18" fill="#151a15" stroke="#303a2f"/>
+        <text x="18" y="28" fill="#9fb98d" font-size="12" font-weight="700" letter-spacing="1.4">BASK · ENCLOSURES</text>
+        <g transform="translate(16 44)"><rect width="302" height="90" rx="14" fill="#212821"/><circle cx="280" cy="18" r="5" fill="#a7c293"/><text x="14" y="25" fill="#f2eee6" font-size="16" font-weight="700">Dwight</text><text x="14" y="43" fill="#939a91" font-size="10">BALL PYTHON</text><text x="14" y="72" fill="#f0ede6" font-size="24" font-weight="700">82°</text><text x="101" y="72" fill="#f0ede6" font-size="24" font-weight="700">76°</text><text x="190" y="72" fill="#f0ede6" font-size="24" font-weight="700">64%</text></g>
+        <g transform="translate(334 44)"><rect width="310" height="90" rx="14" fill="#212821"/><circle cx="288" cy="18" r="5" fill="#a7c293"/><text x="14" y="25" fill="#f2eee6" font-size="16" font-weight="700">Pam</text><text x="14" y="43" fill="#939a91" font-size="10">CRESTED GECKO</text><text x="14" y="72" fill="#f0ede6" font-size="24" font-weight="700">77°</text><text x="105" y="72" fill="#f0ede6" font-size="24" font-weight="700">74°</text><text x="196" y="72" fill="#f0ede6" font-size="24" font-weight="700">68%</text></g>
+        <g transform="translate(16 148)"><rect width="302" height="90" rx="14" fill="#27231c" stroke="#574633"/><circle cx="280" cy="18" r="5" fill="#d6a05e"/><text x="14" y="25" fill="#f2eee6" font-size="16" font-weight="700">Jim</text><text x="14" y="43" fill="#aa9476" font-size="10">LEOPARD GECKO</text><text x="14" y="72" fill="#f0ede6" font-size="24" font-weight="700">79°</text><text x="101" y="72" fill="#f0ede6" font-size="24" font-weight="700">75°</text><text x="190" y="72" fill="#e1b578" font-size="24" font-weight="700">35%</text></g>
+        <g transform="translate(334 148)"><rect width="310" height="90" rx="14" fill="#212821"/><circle cx="288" cy="18" r="5" fill="#a7c293"/><text x="14" y="25" fill="#f2eee6" font-size="16" font-weight="700">Angela</text><text x="14" y="43" fill="#939a91" font-size="10">PANTHER CHAMELEON</text><text x="14" y="72" fill="#f0ede6" font-size="24" font-weight="700">84°</text><text x="105" y="72" fill="#f0ede6" font-size="24" font-weight="700">78°</text><text x="196" y="72" fill="#f0ede6" font-size="24" font-weight="700">61%</text></g>
+      </g>
+
+      <g transform="translate(700 80)">
+        <rect width="348" height="262" rx="18" fill="#151a15" stroke="#303a2f"/>
+        <text x="18" y="28" fill="#d5a061" font-size="12" font-weight="700" letter-spacing="1.4">SHED · TODAY</text>
+        <g transform="translate(18 50)"><circle cx="10" cy="10" r="10" fill="#9fb68d"/><path d="m5 10 4 4 7-8" fill="none" stroke="#152014" stroke-width="2.2"/><text x="32" y="9" fill="#eeebe3" font-size="14" font-weight="700">Fresh water</text><text x="32" y="26" fill="#8f968d" font-size="11">Dwight</text></g>
+        <g transform="translate(18 94)"><circle cx="10" cy="10" r="10" fill="#9fb68d"/><path d="m5 10 4 4 7-8" fill="none" stroke="#152014" stroke-width="2.2"/><text x="32" y="9" fill="#eeebe3" font-size="14" font-weight="700">Morning mist</text><text x="32" y="26" fill="#8f968d" font-size="11">Pam</text></g>
+        <g transform="translate(18 138)"><circle cx="10" cy="10" r="10" fill="#9fb68d"/><path d="m5 10 4 4 7-8" fill="none" stroke="#152014" stroke-width="2.2"/><text x="32" y="9" fill="#eeebe3" font-size="14" font-weight="700">Replace CGD</text><text x="32" y="26" fill="#8f968d" font-size="11">Pam</text></g>
+        <g transform="translate(18 182)"><circle cx="10" cy="10" r="10" fill="none" stroke="#d6a05e" stroke-width="2"/><text x="32" y="9" fill="#f0c792" font-size="14" font-weight="700">Feed insects</text><text x="32" y="26" fill="#a99172" font-size="11">Angela</text></g>
+        <g transform="translate(18 226)"><circle cx="10" cy="10" r="10" fill="none" stroke="#d6a05e" stroke-width="2"/><text x="32" y="9" fill="#f0c792" font-size="14" font-weight="700">Weekly weigh-in</text><text x="32" y="26" fill="#a99172" font-size="11">Jim</text></g>
+      </g>
+    </g>
+    <text x="64" y="602" fill="#7f877b" font-size="15">animalroom.app/haven</text><text x="1136" y="602" fill="#7f877b" font-size="15" text-anchor="end">A read-only room dashboard</text>
+  </g>
+</svg>

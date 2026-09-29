@@ -651,6 +651,14 @@ If an address will not load, run this and send us what it prints:
   curl -fsSL https://animalroom.app/doctor.sh | bash
 SUMMARY
 
+# A quiet, post-success invitation only. It never interrupts setup, withholds a
+# feature, or appears when installation fails. Keep it before the credential
+# reminder so each install still ends with the information the keeper must save.
+echo
+echo "Animal Room is free and remains fully usable without payment."
+echo "If it becomes part of your routine, optional support:"
+echo "  https://animalroom.app/support/"
+
 # Last, and on every install. Each app keeps its own key, in its own .env, and
 # the two are not interchangeable — assuming they were cost a keeper a day of
 # trying one in the other. Reading them back out here means missing a line of

@@ -8,7 +8,7 @@
   <a href="#install"><img alt="One-line install" src="https://img.shields.io/badge/install-one%20command-success"></a>
   <a href="https://animalroom.app/haven/"><img alt="Haven website" src="https://img.shields.io/badge/website-meet%20Haven-3f755a"></a>
   <img alt="Raspberry Pi" src="https://img.shields.io/badge/Raspberry%20Pi-64--bit-C51A4A?logo=raspberrypi&logoColor=white">
-  <a href="https://ko-fi.com/jlyfshhh"><img alt="Ko-fi" src="https://img.shields.io/badge/Ko--fi-buy%20crickets-FF5E5B?logo=ko-fi&logoColor=white"></a>
+  <a href="https://animalroom.app/support/"><img alt="Support Animal Room" src="https://img.shields.io/badge/Support-Animal%20Room-FF5E5B?logo=ko-fi&logoColor=white"></a>
 </p>
 
 ---
@@ -21,6 +21,11 @@ installation and read-only wall display you get when Bask and Shed run
 together. Each app stays independent, and each keeps its own portable data.
 
 **[Meet Haven on the project website →](https://animalroom.app/haven/)**
+
+Not ready to install? **[Try the interactive fake-data demo](https://animalroom.app/demo/)**,
+read **[how the projects are built and tested](https://animalroom.app/trust/)**,
+or see the real room behind them on
+**[Instagram](https://www.instagram.com/thebioactivekeeper)**.
 
 ## Which should I choose?
 
@@ -35,14 +40,16 @@ other one and enable Haven. No data is replaced.
 
 ## What you need
 
-**A Raspberry Pi 5 with 4 GB is the recommendation.** 2 GB is the supported
-minimum. The board matters less than what else it is running — see below.
+**For the combined Haven setup, a Raspberry Pi 5 with 4 GB is the
+recommendation.** Haven's supported minimum is 2 GB; either app can run alone
+on a smaller board. The board matters less than what else it is running — see
+below.
 
 | | Bask alone | Shed alone | Haven (both) |
 |---|---|---|---|
 | Free memory needed | 240 MB | 400 MB | 650 MB |
-| Minimum board | 1 GB | 2 GB | 2 GB |
-| Recommended | 2 GB | 4 GB | 4 GB |
+| Minimum board | 512 MB | 1 GB | 2 GB |
+| Recommended | 1 GB | 2 GB | 4 GB |
 
 Any 64-bit Debian, Raspberry Pi OS or Ubuntu system works, plus a few GB of
 free disk. Bask also needs a Bluetooth adapter and compatible sensors.

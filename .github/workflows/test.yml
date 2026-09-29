@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Syntax
-        run: bash -n install.sh uninstall.sh doctor.sh scripts/privacy-scan.sh tests/install.sh tests/uninstall.sh tests/doctor.sh tests/privacy-scan.sh
+        run: bash -n install.sh uninstall.sh doctor.sh scripts/privacy-scan.sh tests/install.sh tests/uninstall.sh tests/doctor.sh tests/privacy-scan.sh tests/site.sh
       - name: Selection behavior
         run: bash tests/install.sh
       - name: Uninstaller behavior
@@ -27,6 +27,8 @@ jobs:
         run: bash tests/doctor.sh
       - name: Privacy scan behavior
         run: bash tests/privacy-scan.sh
+      - name: Public site behavior
+        run: bash tests/site.sh
       - name: Privacy scan
         env:
           PRIVACY_DENYLIST: ${{ secrets.PRIVACY_DENYLIST }}

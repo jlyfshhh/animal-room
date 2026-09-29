@@ -3,30 +3,31 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Animal Room — open-source tools for keeping animals well</title>
-  <meta name="description" content="Free, self-hosted apps for the animal room: climate monitoring, husbandry records, and one combined room dashboard. No subscription, no cloud account, your data stays yours.">
-  <meta name="theme-color" content="#17382d">
+  <title>Animal Room — self-hosted tools for animal keepers</title>
+  <meta name="description" content="Free, self-hosted tools for reptile and animal keepers. Monitor enclosure climate with Bask, organize care with Shed, and see both in Haven.">
+  <meta name="theme-color" content="#101310">
   <!-- GitHub Pages serves static files and cannot send custom response headers,
        so the protection that can travel inside the page does. These pages load
-       nothing but their own images and their own inline styling, so everything
-       else — scripts, third-party requests, form submissions — is denied
-       outright. Note that frame-ancestors and X-Content-Type-Options are
+       only their own images, styles, and theme scripts, so third-party requests
+       and form submissions are denied outright. Note that frame-ancestors and
+       X-Content-Type-Options are
        header-only: a browser ignores them here, and Pages will not send them. -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; base-uri 'none'; form-action 'none'">
+  <meta name="color-scheme" content="dark light">
   <meta name="referrer" content="no-referrer">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="canonical" href="https://animalroom.app/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Animal Room">
-  <meta property="og:title" content="Animal Room — open-source tools for keeping animals well">
-  <meta property="og:description" content="Climate monitoring, husbandry records, and one combined room dashboard. Free, self-hosted, and yours.">
+  <meta property="og:title" content="Animal Room — climate and care, together">
+  <meta property="og:description" content="Bask monitors enclosure climate. Shed organizes care. Haven brings both into one clear room dashboard.">
   <meta property="og:url" content="https://animalroom.app/">
   <meta property="og:image" content="https://animalroom.app/og.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Animal Room — open-source tools for keeping animals well">
-  <meta name="twitter:description" content="Climate monitoring, husbandry records, and one combined room dashboard.">
+  <meta name="twitter:title" content="Animal Room — climate and care, together">
+  <meta name="twitter:description" content="Self-hosted climate monitoring, care records, and one combined room dashboard.">
   <meta name="twitter:image" content="https://animalroom.app/og.png">
   <style>
     :root{
@@ -69,6 +70,7 @@
     .why{background:var(--forest);color:#eff8f2;text-align:center}
     .why h2{font-size:clamp(1.6rem,3.8vw,2.4rem);max-width:820px;margin:auto}
     .why p{color:#b6cfc1;max-width:700px;margin:20px auto 0}
+    .story-links{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:27px}.story-links a{border:1px solid rgba(255,255,255,.24);border-radius:999px;padding:9px 15px;color:#eff8f2;font-weight:750;font-size:.88rem}.story-links a:hover{background:rgba(255,255,255,.08);text-decoration:none}
 
     .section-head{text-align:center;max-width:720px;margin:0 auto 46px}
     .section-head h2{font-size:clamp(1.8rem,4vw,2.6rem);margin-top:8px}
@@ -133,6 +135,9 @@
     @media(max-width:900px){.tools{grid-template-columns:1fr}.principle-grid{grid-template-columns:repeat(2,1fr)}.choices{grid-template-columns:repeat(2,1fr)}}
     @media(max-width:620px){section{padding:62px 0}.links .hide-small{display:none}.links{gap:13px}.hero{padding-top:52px}.principle-grid,.choices{grid-template-columns:1fr}.command{font-size:.8rem}}
   </style>
+  <script src="/assets/theme-init.js"></script>
+  <link rel="stylesheet" href="/assets/site.css">
+  <script src="/assets/site.js" defer></script>
 </head>
 <body>
   <header>
@@ -140,7 +145,8 @@
       <a class="brand" href="#top"><span class="brand-mark">🌿</span>Animal Room</a>
       <nav class="links" aria-label="Main navigation">
         <a class="hide-small" href="#tools">The tools</a>
-        <a class="hide-small" href="#principles">Why</a>
+        <a class="hide-small" href="/demo/">Demo</a>
+        <a class="hide-small" href="/trust/">Trust</a>
         <a href="https://github.com/jlyfshhh">GitHub</a>
         <a class="nav-cta" href="#install">Install</a>
       </nav>
@@ -152,30 +158,38 @@
       <div class="wrap">
         <div class="hero-copy">
           <div class="eyebrow">Free · open-source · self-hosted</div>
-          <h1>Tools for the room<br><span>you already built.</span></h1>
-          <p class="lead">Two small apps for keeping reptiles, amphibians, and inverts — one watches the climate, one tracks the care — plus a combined display for the whole room. They run on a Raspberry Pi in your house, not on someone else's server.</p>
+          <h1>Your animal room,<br><span>at a glance.</span></h1>
+          <p class="lead">Bask watches enclosure climate. Shed organizes care. Haven brings both into one clear room dashboard. Everything runs on hardware you control.</p>
           <div class="buttons">
-            <a class="button primary" href="#install">Install in one command</a>
-            <a class="button secondary" href="#tools">See what they do</a>
+            <a class="button primary" href="/demo/">Try the demo</a>
+            <a class="button secondary" href="#install">Install in one command</a>
           </div>
-          <p class="fine">No subscription · no vendor account · no cloud required · your data exports whenever you want</p>
+          <p class="fine">Free and open source · self-hosted · no subscription · portable data</p>
         </div>
       </div>
     </section>
 
-    <section class="why">
-      <div class="wrap">
-        <h2>Built by a keeper, for an actual animal room.</h2>
-        <p>These started as tools for one household's collection — a wall display that shows whether every enclosure is where it should be, and a shared care list so nothing gets fed twice or missed entirely. They're free because husbandry software shouldn't be a subscription.</p>
+    <section class="room-proof" aria-labelledby="room-proof-title">
+      <div class="wrap room-proof-grid">
+        <div class="room-proof-copy">
+          <div class="eyebrow">Built for real use</div>
+          <h2 id="room-proof-title">Made in the room it supports.</h2>
+          <p>Animal Room began with two everyday needs: see every enclosure at a glance and give the whole household one reliable care list. Bask, Shed, and Haven now run here every day.</p>
+          <a class="room-proof-link" href="https://www.instagram.com/thebioactivekeeper">Follow the real animal room on Instagram →</a>
+        </div>
+        <div class="room-photos" aria-label="Animal Room in use">
+          <img class="room-photo" src="/assets/room/dashboard-in-room.jpg" alt="Haven running on a wide monitor above reptile enclosures" width="1800" height="1350" loading="lazy" decoding="async">
+          <img class="room-photo" src="/assets/room/animal-room-rack.jpg" alt="Reptile enclosures in the animal room beneath the Haven display" width="1200" height="1600" loading="lazy" decoding="async">
+        </div>
       </div>
     </section>
 
     <section id="tools">
       <div class="wrap">
         <div class="section-head">
-          <div class="eyebrow">Two focused tools</div>
-          <h2>Each one does a single job well.</h2>
-          <p>Install only what you need. They work on their own, and they work better together.</p>
+          <div class="eyebrow">Choose your setup</div>
+          <h2>Two tools. One shared view.</h2>
+          <p>Use either tool on its own. Install both to add the Haven room display.</p>
         </div>
         <div class="tools">
 
@@ -183,7 +197,7 @@
             <div class="tool-icon">🐍</div>
             <h3>Shed</h3>
             <p class="tagline">Good care shows.</p>
-            <p>A shared husbandry tracker for the whole household. Today's care list on everyone's phone, and a record you can actually look back on.</p>
+            <p>Shared care schedules and records for the whole household. See what is due, what is done, and who handled it.</p>
             <ul class="feature-list">
               <li>Daily, weekly, and custom care schedules</li>
               <li>Keeper accounts, with credit for who did what</li>
@@ -197,8 +211,8 @@
           <article class="tool bask">
             <div class="tool-icon">☀️</div>
             <h3>Bask</h3>
-            <p class="tagline">Know the room is okay, at a glance.</p>
-            <p>Turns cheap Bluetooth sensors into a calm, room-scale climate dashboard you can read from across the room.</p>
+            <p class="tagline">See the room at a glance.</p>
+            <p>Turns compatible Bluetooth sensors into a clear climate dashboard for every enclosure.</p>
             <ul class="feature-list">
               <li>Live warm side, cool side, and humidity</li>
               <li>Per-species day and night targets</li>
@@ -212,7 +226,7 @@
             <div class="tool-icon">🌿</div>
             <h3>Haven</h3>
             <p class="tagline">The whole room, one view.</p>
-            <p>Not a third app — the combined installer and the read-only room display that Bask and Shed produce together.</p>
+            <p>The paired Bask + Shed setup, with a read-only dashboard for the whole room. No third database or extra records to manage.</p>
             <ul class="feature-list">
               <li>Enclosure climate beside today's unfinished care</li>
               <li>One command installs both and connects them</li>
@@ -229,14 +243,14 @@
     <section class="principles" id="principles">
       <div class="wrap">
         <div class="section-head">
-          <div class="eyebrow">The rules these follow</div>
-          <h2>Your animals, your server, your data.</h2>
+          <div class="eyebrow">Built around ownership</div>
+          <h2>Local by default. Portable by design.</h2>
         </div>
         <div class="principle-grid">
-          <article class="principle"><div class="icon">🏠</div><h3>Runs in your house</h3><p>Everything lives on a Raspberry Pi or other home server. No cloud account is required to use any of it.</p></article>
-          <article class="principle"><div class="icon">📦</div><h3>Your data leaves easily</h3><p>Full JSON and CSV exports at any time, plus dated local backups. Nothing is locked in.</p></article>
+          <article class="principle"><div class="icon">🏠</div><h3>Runs at home</h3><p>Use a Raspberry Pi or another home server. Core features need no Animal Room account or cloud service.</p></article>
+          <article class="principle"><div class="icon">📦</div><h3>Easy to export</h3><p>Download JSON and CSV exports, and keep dated local backups.</p></article>
           <article class="principle"><div class="icon">🧾</div><h3>History you can correct</h3><p>Fix a mistaken entry without erasing the record. Corrections stay visible and auditable.</p></article>
-          <article class="principle"><div class="icon">🆓</div><h3>Free, and staying free</h3><p>MIT licensed and open source. Tips are welcome, but nothing is behind them.</p></article>
+          <article class="principle"><div class="icon">🆓</div><h3>Free and open source</h3><p>MIT licensed. Tips are optional and never unlock features.</p></article>
         </div>
       </div>
     </section>
@@ -245,12 +259,12 @@
       <div class="wrap">
         <div class="section-head">
           <div class="eyebrow" style="color:#93c09d">One installer</div>
-          <h2>One command sets up whatever you pick.</h2>
-          <p>Run this on 64-bit Raspberry Pi OS (Lite recommended), Debian, or Ubuntu. It prepares Docker, installs your selection, and keeps your data safe across updates.</p>
+          <h2>Choose what to install.</h2>
+          <p>One command installs Bask, Shed, or both as Haven on 64-bit Raspberry Pi OS, Debian, or Ubuntu.</p>
         </div>
         <div class="install-box">
           <h3>Install</h3>
-          <p>The installer asks what you want. Pick one now and add the others later — your existing records are preserved.</p>
+          <p>Pick one now and add the other later. Updates preserve your settings and records.</p>
           <code class="command">curl -fsSL https://animalroom.app/install.sh | bash</code>
           <p class="command-note">Prefer to read it first? <a href="install.sh" style="color:#ffd687">View the script</a> — it's plain bash, and worth skimming before you pipe anything to a shell.</p>
           <p class="command-note">It finishes by printing the address to open — a numeric one like <code>http://192.168.1.50:3000</code>. Bookmark it. That address comes from your router, so reserve it for the machine in your router's settings if you want it to stay the same.</p>
@@ -271,14 +285,14 @@
       <div class="wrap">
         <div class="section-head"><div class="eyebrow">Good to know</div><h2>Common questions</h2></div>
         <div class="faq">
-          <details><summary>What hardware do I need?</summary><p><b>A Raspberry Pi 5 with 4&nbsp;GB is the recommendation, and 2&nbsp;GB is the supported minimum.</b> Any 64-bit Raspberry Pi OS, Debian or Ubuntu machine works. Bask additionally needs compatible Bluetooth temperature and humidity sensors. Any browser on your home network can open the apps — phones included.</p><p><b>The operating system matters more than the board.</b> Use <b>Raspberry Pi OS Lite (64-bit)</b>: a desktop session idles near 800&nbsp;MB where Lite uses about 280&nbsp;MB. A 1&nbsp;GB board running a desktop has roughly 200&nbsp;MB free — not enough for Shed to start — while the same board on Lite has room to spare. You never need a screen attached; everything is opened from a phone or laptop.</p><p><b>Nothing is compiled during installation.</b> Both apps ship as prebuilt multi-architecture images, so your board only has to run them. Measured moments after a fresh start: Bask 106&nbsp;MB plus 55&nbsp;MB for its Bluetooth scanner, Shed 154&nbsp;MB, and the Haven room proxy 46&nbsp;MB — about <b>360&nbsp;MB for all of it</b>. Shed answers its health check 4 seconds after starting.</p><p>A 512&nbsp;MB <b>Pi Zero 2 W is a Bask-only board</b> — enough for Bask on Lite, not enough for Shed. The installer checks free memory before changing anything and tells you if there is not enough, instead of failing part way through. You can also start with one app and add the other later; the installer will not disturb what is already there.</p></details>
+          <details><summary>What hardware do I need?</summary><p><b>For Haven, use a Raspberry Pi with at least 2&nbsp;GB; a Pi 5 with 4&nbsp;GB is the easy recommendation.</b> Bask can run by itself on a 512&nbsp;MB Pi Zero 2 W. Shed needs at least 1&nbsp;GB. Any 64-bit Raspberry Pi OS, Debian, or Ubuntu machine works.</p><p>Raspberry Pi OS Lite (64-bit) leaves more memory for the apps than the desktop edition. No screen needs to stay attached: open everything from a phone or computer on your home network. Bask also needs compatible Bluetooth temperature and humidity sensors.</p><p>The installer checks available memory before making changes, and both apps use prebuilt container images rather than compiling on your machine.</p></details>
           <details><summary>Do I have to install all of them?</summary><p>No. Every app stands on its own, and the installer lets you choose. You can add another later without disturbing the data you already have.</p></details>
-          <details><summary>Does any of this need the internet?</summary><p>Installing and updating does. Day-to-day monitoring, care records, and the room display all run on your home network. Optional phone notifications use whichever provider you choose.</p></details>
-          <details><summary>Is my data sent anywhere?</summary><p>The apps themselves contain no tracking or telemetry, and neither one has an account to sign up for. Your records live in a database on your own machine, and you can export or back up the whole thing whenever you like.</p><p>The exceptions are the extras you switch on yourself: phone alerts, or a smart plug or air-conditioner you want Bask to see. Those talk to that provider's own service — and only that one — using the details you enter. Leave them off and nothing goes out.</p></details>
-          <details><summary>It installed, but the address will not load</summary><p>Two things cause almost all of these. First, the address: use the <b>numeric</b> one the installer printed, like <code>http://192.168.1.50:3000</code>. If it worked before and stopped, your router most likely gave the machine a new address — check it, and reserve it there to stop it moving again. Second, memory — if the board ran out while starting, the app is killed and the address simply refuses to load.</p><p>This reports both, plus anything else useful, and you can paste the result to whoever is helping:</p><p><code>curl -fsSL https://animalroom.app/doctor.sh | bash</code></p><p>It only reads your system and changes nothing. It contains no records, passwords, or access codes — settings are listed by name only, never by value.</p></details>
+          <details><summary>Does any of this need the internet?</summary><p>Only installation, updates, and optional integrations do. Monitoring, care records, and the Haven display run on your home network.</p></details>
+          <details><summary>Is my data sent anywhere?</summary><p>Core use has no product analytics, telemetry, or Animal Room account. Records stay on your machine and can be exported or backed up at any time.</p><p>Optional alerts and smart-device integrations contact the provider you choose. The <a href="/trust/">Trust page</a> explains each boundary.</p></details>
+          <details><summary>It installed, but the address will not load</summary><p>Use the numeric address printed by the installer, such as <code>http://192.168.1.50:3000</code>. If it stopped working later, your router may have assigned the machine a new address. Low memory can also stop an app from starting.</p><p>Run <code>curl -fsSL https://animalroom.app/doctor.sh | bash</code> for a read-only diagnostic report. It excludes records, passwords, access codes, and secret values.</p></details>
           <details><summary>How do I uninstall?</summary><p>Run <code>curl -fsSL https://animalroom.app/uninstall.sh | bash</code> and choose what to remove. <b>Your records are kept by default</b> — the apps stop and their containers and images go, but the data directories stay where they are, so reinstalling later picks up where you left off. Add <code>--purge</code> to erase the records too; it writes a backup archive first and asks you to confirm.</p></details>
           <details><summary>Is this husbandry or veterinary advice?</summary><p>No. These tools help you monitor, plan, and record care. Species targets and schedules should come from trusted husbandry sources, and health concerns belong with a qualified exotics veterinarian.</p></details>
-          <details><summary>Who makes this?</summary><p>One keeper with a bioactive-heavy animal room, scratching their own itch. The code is open on GitHub — issues and pull requests are welcome, and so is a note about what you'd find useful.</p></details>
+          <details><summary>Who makes this?</summary><p>One keeper building for a real, bioactive-heavy animal room. The code is open on GitHub, and practical feedback is welcome.</p></details>
         </div>
       </div>
     </section>
@@ -291,12 +305,14 @@
         <a href="/shed/">Shed</a>
         <a href="/bask/">Bask</a>
         <a href="haven/">Haven</a>
+        <a href="/demo/">Demo</a>
+        <a href="/trust/">Trust</a>
         <a href="https://github.com/jlyfshhh">GitHub</a>
         <a href="https://www.instagram.com/thebioactivekeeper">Instagram</a>
-        <a href="https://ko-fi.com/jlyfshhh">🦗 Buy crickets</a>
+        <a href="/support/">Support Animal Room</a>
       </div>
-      <p class="footer-note">Bask watches the habitat. Shed organizes the care. Haven brings both into one calm room dashboard.</p>
-      <p class="footer-note">Free and open-source under the MIT license. Built with the help of AI, reviewed and tested by a human.</p>
+      <p class="footer-note">Bask watches climate. Shed organizes care. Haven brings both together.</p>
+      <p class="footer-note">Free and open source under the MIT license.</p>
     </div>
   </footer>
 </body>

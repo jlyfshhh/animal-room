@@ -454,6 +454,10 @@ if grep -q "SHED_BOOTSTRAP_TOKEN" <<<"$solo_output"; then
   echo "A Bask-only install pointed at Shed's key file." >&2
   exit 1
 fi
+grep -qF "https://animalroom.app/support/" <<<"$solo_output" || {
+  echo "A successful install did not print the quiet optional-support link." >&2
+  exit 1
+}
 
 # A newly installed Docker daemon commonly works only through sudo until the
 # next login. Every unified-installer Docker operation must follow that path.

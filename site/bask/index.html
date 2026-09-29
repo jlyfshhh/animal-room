@@ -3,30 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Bask — know your animal room is okay, at a glance</title>
-<meta name="description" content="Bask is a free, self-hosted Docker dashboard for reptile & amphibian keepers. It reads Govee sensors over Bluetooth and shows a big green 'all good' — or a clear alert. One-line Raspberry Pi install, no account.">
+<meta name="theme-color" content="#101310">
+<title>Bask — enclosure climate at a glance</title>
+<meta name="description" content="Bask is a free, self-hosted climate dashboard for reptile and amphibian keepers. Read Govee sensors over Bluetooth and spot enclosure problems at a glance.">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="canonical" href="https://animalroom.app/bask/">
 
 <!-- GitHub Pages serves static files and cannot send custom response headers,
      so the protection that can travel inside the page does. This page loads
-     nothing but its own images and its own inline styling, so everything else —
-     scripts, third-party requests, form submissions — is denied outright. Note
+     only its own images, styles, and theme scripts, so third-party requests and
+     form submissions are denied outright. Note
      that frame-ancestors and X-Content-Type-Options are header-only: a browser
      ignores them here, and Pages will not send them. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="color-scheme" content="dark light">
 <meta name="referrer" content="no-referrer">
 
 <!-- Social / link previews -->
 <meta property="og:type" content="website">
-<meta property="og:title" content="Bask — know your animal room is okay, at a glance">
-<meta property="og:description" content="A free, self-hosted temperature & humidity dashboard for reptile keepers. One-line Docker install on Raspberry Pi OS — no account or subscription.">
+<meta property="og:title" content="Bask — enclosure climate at a glance">
+<meta property="og:description" content="A free, self-hosted temperature and humidity dashboard for reptile keepers. Clear room status, no account or subscription.">
 <meta property="og:url" content="https://animalroom.app/bask/">
 <meta property="og:image" content="https://animalroom.app/bask/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Bask — know your animal room is okay, at a glance">
-<meta name="twitter:description" content="A free, self-hosted temperature & humidity dashboard for reptile keepers. One-line Docker install on Raspberry Pi OS.">
+<meta name="twitter:title" content="Bask — enclosure climate at a glance">
+<meta name="twitter:description" content="A free, self-hosted temperature and humidity dashboard for reptile keepers.">
 <meta name="twitter:image" content="https://animalroom.app/bask/og.png">
 
 <style>
@@ -133,15 +136,19 @@
   footer .fine{font-size:.84rem;color:#8d96a3;max-width:640px;margin:14px auto 0}
   .disc{font-size:.8rem;color:#7b8493;margin-top:18px}
 </style>
+<script src="/assets/theme-init.js"></script>
+<link rel="stylesheet" href="/assets/site.css">
+<script src="/assets/site.js" defer></script>
 </head>
 <body>
 
 <header>
   <div class="wrap nav">
     <a href="#top"><img src="bask-logo.svg" alt="Bask"></a>
-    <nav class="nav-links">
+    <nav class="nav-links" aria-label="Main navigation">
       <a class="hide-sm" href="#what">What it is</a>
-      <a class="hide-sm" href="#need">What you need</a>
+      <a class="hide-sm" href="/demo/">Demo</a>
+      <a class="hide-sm" href="/trust/">Trust</a>
       <a href="https://github.com/jlyfshhh/bask">GitHub</a>
       <a class="nav-cta" href="#start">Get started</a>
     </nav>
@@ -151,14 +158,14 @@
 <a id="top"></a>
 <section class="hero">
   <div class="wrap">
-    <div class="eyebrow">Free &amp; open-source · for reptile &amp; amphibian keepers</div>
-    <h1>Know your animal room is okay — <span style="color:var(--amber-deep)">at a glance.</span></h1>
-    <p class="lead">Bask watches the temperature and humidity in every enclosure and shows one simple answer from across the room: a big green <b>“all good,”</b> or a red alert that tells you exactly what’s wrong.</p>
+    <div class="eyebrow">Free · open source · self-hosted</div>
+    <h1>Enclosure climate, <span style="color:var(--amber-deep)">at a glance.</span></h1>
+    <p class="lead">Bask reads compatible Bluetooth sensors and shows whether each enclosure is in range—on any screen in your home.</p>
     <div class="cta-row">
       <a class="btn btn-primary" href="#start">☀️ Get started</a>
-      <a class="btn btn-ghost" href="https://github.com/jlyfshhh/bask">View on GitHub</a>
+      <a class="btn btn-ghost" href="/demo/">Try it in Haven</a>
     </div>
-    <div class="hero-note">No cloud account · no monthly fee · your data stays in your home</div>
+    <div class="hero-note">No Animal Room account · no subscription · local history</div>
 
     <div class="mock">
       <!-- The numeric address is what the installer prints and what always
@@ -171,7 +178,7 @@
 
 <section class="idea">
   <div class="wrap">
-    <h2>Walk into your animal room and just <em>know</em> — without checking a single gauge.</h2>
+    <h2>Walk in. Look up. Know what needs attention.</h2>
     <div class="chips">
       <span class="chip good">✓ Green = everything’s in range</span>
       <span class="chip bad">⚠ Red = this enclosure, this problem</span>
@@ -183,18 +190,18 @@
   <div class="wrap">
     <div class="shead">
       <div class="eyebrow">What it does</div>
-      <h2>Everything you need to keep an eye on your animals</h2>
-      <p>Bask reads the same affordable Govee sensors many keepers already use, and turns them into a calm, at-a-glance wall display.</p>
+      <h2>One clear view of the room</h2>
+      <p>Bask turns compatible Govee sensors into a dashboard you can read from across the room.</p>
     </div>
     <div class="grid">
-      <div class="feat"><div class="ico">🟢</div><h3>One honest status</h3><p>A giant green “all good,” or a red banner naming the out-of-range enclosure and exactly which reading is off.</p></div>
-      <div class="feat"><div class="ico">🦎</div><h3>Per-species ranges</h3><p>Set the right warm-side, cool-side, and humidity targets per species. Ships with sensible starting points for common reptiles.</p></div>
-      <div class="feat"><div class="ico">☀️🌙</div><h3>Day &amp; night aware</h3><p>Different targets for lights-on and lights-off, switched automatically — so a normal night-time drop doesn’t cry wolf.</p></div>
-      <div class="feat"><div class="ico">📡</div><h3>Wireless &amp; passive</h3><p>Reads your Govee sensors over Bluetooth. No pairing dance, no Govee account, no wires across the room.</p></div>
-      <div class="feat"><div class="ico">🔋</div><h3>Battery &amp; signal alerts</h3><p>Warns you before a sensor’s battery dies or drops off — so you’re never blind without knowing it.</p></div>
-      <div class="feat"><div class="ico">📲</div><h3>Pings your phone</h3><p>Optional phone alerts the moment an enclosure needs attention — even when you’re away from home. Two-minute setup.</p></div>
-      <div class="feat"><div class="ico">📱</div><h3>Installs like an app</h3><p>Add it to your phone or tablet’s home screen — its own icon, opens fullscreen. No app store needed.</p></div>
-      <div class="feat"><div class="ico">🔒</div><h3>Private by design</h3><p>Runs on a tiny computer in your home, with no vendor account to sign up for. Monitoring sends nothing out; optional extras like phone alerts reach only the service you pick. No subscription, ever.</p></div>
+      <div class="feat"><div class="ico">🟢</div><h3>Clear room status</h3><p>See “all good” when readings are in range, or a direct alert naming the enclosure and problem.</p></div>
+      <div class="feat"><div class="ico">🦎</div><h3>Per-species ranges</h3><p>Set warm-side, cool-side, and humidity targets for each species. Built-in presets are editable starting points.</p></div>
+      <div class="feat"><div class="ico">☀️🌙</div><h3>Day and night targets</h3><p>Switch target ranges automatically with your lighting schedule.</p></div>
+      <div class="feat"><div class="ico">📡</div><h3>Passive Bluetooth</h3><p>Reads supported Govee broadcasts without pairing, a Govee account, or wires across the room.</p></div>
+      <div class="feat"><div class="ico">🔋</div><h3>Battery and signal</h3><p>Know when a sensor battery is low or a reading has gone stale.</p></div>
+      <div class="feat"><div class="ico">📲</div><h3>Optional phone alerts</h3><p>Send a notification when an enclosure needs attention, using the provider you choose.</p></div>
+      <div class="feat"><div class="ico">📱</div><h3>Home-screen app</h3><p>Add Bask to a phone or tablet for a full-screen app experience. No app store required.</p></div>
+      <div class="feat"><div class="ico">🔒</div><h3>Local by default</h3><p>Core monitoring runs on your own hardware with no Animal Room account. Optional integrations connect only when you enable them.</p></div>
     </div>
   </div>
 </section>
@@ -203,11 +210,11 @@
   <div class="wrap">
     <div class="shead">
       <div class="eyebrow">What you’ll need</div>
-      <h2>Three simple things</h2>
-      <p>A one-time setup with inexpensive, easy-to-find parts. No soldering, no wiring.</p>
+      <h2>Three things</h2>
+      <p>No soldering or custom wiring.</p>
     </div>
     <div class="grid">
-      <div class="feat"><div class="ico">🥧</div><h3>A Raspberry Pi</h3><p>Any supported 64-bit model running Raspberry Pi OS — use the SD card that came with it if it already boots. Bask runs in about 130&nbsp;MB, so <b>512&nbsp;MB</b> is enough and even a Pi Zero 2 W is comfortable. A Pi 4 is the easy pick if you may add <a href="/shed/">Shed</a> later, which wants 1&nbsp;GB of its own.</p></div>
+      <div class="feat"><div class="ico">🥧</div><h3>A Raspberry Pi</h3><p>Use a supported 64-bit model running Raspberry Pi OS. A Pi Zero 2 W can run Bask alone; choose at least 2&nbsp;GB if you may add <a href="/shed/">Shed</a>.</p></div>
       <div class="feat"><div class="ico">🌡️</div><h3>Govee H5075 sensors</h3><p>One small thermo-hygrometer in each enclosure you want to watch. Affordable and widely available.</p></div>
       <div class="feat"><div class="ico">📱</div><h3>Any screen</h3><p>View it on your phone, a tablet, an old monitor, or a smart display — anything with a web browser on your Wi-Fi.</p></div>
     </div>
@@ -218,11 +225,11 @@
   <div class="wrap">
     <div class="shead">
       <div class="eyebrow">Getting started</div>
-      <h2>Up and running in about 20 minutes</h2>
-      <p>If your Pi already starts Raspberry Pi OS, keep its SD card. Open Terminal, paste one installer command, and Bask handles Docker, Bluetooth, storage, and automatic startup.</p>
+      <h2>Install in four steps</h2>
+      <p>Start Raspberry Pi OS, run one installer command, then add your sensors.</p>
     </div>
 
-    <a class="flow"><img src="setup-flow.svg" alt="Four steps: start Raspberry Pi OS, open Terminal, install Bask, open the dashboard"></a>
+    <div class="flow"><img src="setup-flow.svg" alt="Four steps: start Raspberry Pi OS, open Terminal, install Bask, open the dashboard"></div>
 
     <div class="steps">
       <div class="step"><div class="n">1</div><div>
@@ -235,12 +242,12 @@
       </div></div>
       <div class="step"><div class="n">3</div><div>
         <h3>Paste one line</h3>
-        <p>The installer prepares Docker and Bluetooth, downloads the prebuilt Bask image, and sets it to start automatically on every boot. Nothing is compiled on the Pi, so this is a download rather than a long wait.</p>
+        <p>The installer prepares Docker and Bluetooth, downloads Bask, and sets it to start automatically. Nothing is compiled on the Pi.</p>
       </div></div>
       <div class="step"><div class="n">4</div><div>
         <h3>Open it &amp; add your sensors</h3>
-        <p>The installer finishes by printing the address, a numeric one like <span class="url">http://192.168.1.50:8080</span>. Open that on any device on your Wi-Fi, tap <b>⚙ Manage → Pair by proximity</b>, hold a Govee sensor near the Pi, and assign it to an enclosure. Done!</p>
-        <p>The installer also offers a <code>.local</code> name as an alternative. It is easier to remember, but it only works on devices that support mDNS — which Windows without Bonjour, and a good many Android phones, do not. If it will not load, use the numeric address.</p>
+        <p>Open the numeric address printed by the installer, such as <span class="url">http://192.168.1.50:8080</span>. Tap <b>⚙ Manage → Pair by proximity</b>, hold a Govee sensor near the Pi, and assign it to an enclosure.</p>
+        <p>A <code>.local</code> name is also provided, but it does not work on every device. Use the numeric address if it will not load.</p>
       </div></div>
     </div>
 
@@ -261,12 +268,12 @@
   <div class="wrap">
     <div class="shead"><div class="eyebrow">Good to know</div><h2>Questions keepers ask</h2></div>
     <div class="faq">
-      <details><summary>Is it really free?</summary><p>Yes — completely free and open-source under the MIT license. There’s no account, no subscription, and nothing is sold. If it helps and you’d like to chip in toward the animals’ crickets, there’s an optional tip jar, but it’s never required.</p></details>
+      <details><summary>Is it free?</summary><p>Yes. Bask is open source under the MIT license, with no subscription or paid features. Optional tips support testing and development.</p></details>
       <details><summary>Do I need to be techy?</summary><p>No. Start Raspberry Pi OS, open Terminal, and paste one line. The installer handles Docker, Bluetooth, persistent storage, and automatic startup. The beginner guide explains both the on-screen and remote-SSH routes.</p></details>
       <details><summary>Will it work for my animals?</summary><p>Bask works for any keeper using Govee H5075 sensors. It ships with starting temperature and humidity ranges for several common reptiles, and you can adjust every number to match your species and your room. <b>It’s a monitoring aid, not veterinary advice</b> — always verify against trusted care resources.</p></details>
       <details><summary>Is my information private?</summary><p>Yes. Sensor readings, enclosure settings, and history stay on your own Raspberry Pi. Core monitoring needs no account or cloud. Optional integrations such as ntfy alerts or Cielo room climate contact only the service you choose to connect.</p></details>
       <details><summary>How do updates work?</summary><p>Run the same one-line installer again. It downloads the current prebuilt image and restarts Bask on it, without replacing your settings or history. Nothing is compiled on your Pi, so an update is a download rather than a long rebuild. The Settings screen also provides a portable backup download.</p></details>
-      <details><summary>It installed, but the address will not load</summary><p>Two things cause almost all of these. First, the address: use the <b>numeric</b> one the installer printed, like <code>http://192.168.1.50:8080</code>. A <code>.local</code> address only works on devices that support it, which Windows and many Android phones do not. Second, memory — if the board ran out while starting, the app is killed and the address simply refuses to load.</p><p>This reports both, plus anything else useful, and you can paste the result to whoever is helping:</p><p><code>curl -fsSL https://animalroom.app/doctor.sh | bash</code></p><p>It only reads your system and changes nothing. It contains no records, passwords, or access codes — settings are listed by name only, never by value.</p></details>
+      <details><summary>It installed, but the address will not load</summary><p>Use the numeric address printed by the installer, such as <code>http://192.168.1.50:8080</code>. A <code>.local</code> address does not work on every device. Low memory can also stop an app from starting.</p><p>Run <code>curl -fsSL https://animalroom.app/doctor.sh | bash</code> for a read-only diagnostic report. It excludes records, passwords, access codes, and secret values.</p></details>
           <details><summary>Can I show it on a wall display?</summary><p>Yes. Open it on a cheap wall-mounted tablet, an old phone, a monitor, or a smart display like an Amazon Echo Show — anything with a web browser on your network.</p></details>
     </div>
   </div>
@@ -278,12 +285,14 @@
     <div class="flinks">
       <a href="https://github.com/jlyfshhh/bask">GitHub</a>
       <a href="https://github.com/jlyfshhh/bask/blob/main/docs/SETUP.md">Setup guide</a>
+      <a href="/demo/">Demo</a>
+      <a href="/trust/">Trust</a>
       <a href="https://www.instagram.com/thebioactivekeeper">Instagram</a>
-      <a href="https://ko-fi.com/jlyfshhh">🦗 Buy crickets</a>
+      <a href="/support/">Support Animal Room</a>
     </div>
-    <p class="fine"><a href="https://animalroom.app/shed/">🐍 Shed</a> organizes animal care. Install both as <a href="/haven/">🌿 Haven</a> for one combined room view.</p>
-    <p class="fine">Built by a reptile keeper who wanted to walk into the animal room and just know everything was okay. Follow the animals and bioactive builds behind Bask on Instagram <a href="https://www.instagram.com/thebioactivekeeper">@thebioactivekeeper</a>.</p>
-    <p class="disc">Free &amp; open-source (MIT). A monitoring aid, not a substitute for proper husbandry research. Built with the help of AI, reviewed and tested by a human.</p>
+    <p class="fine"><a href="https://animalroom.app/shed/">🐍 Shed</a> organizes care. Install both as <a href="/haven/">🌿 Haven</a> for one combined room view.</p>
+    <p class="fine">Built and tested in a working animal room. See the animals and bioactive builds on Instagram <a href="https://www.instagram.com/thebioactivekeeper">@thebioactivekeeper</a>.</p>
+    <p class="disc">Free and open source under the MIT license. A monitoring aid, not a substitute for husbandry research.</p>
   </div>
 </footer>
 

@@ -1,0 +1,79 @@
+name: Share your Animal Room setup
+description: Tell us how Bask, Shed, or Haven fits into a real animal room.
+title: "[Setup] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for sharing a real setup. This issue will be public, so leave
+        out household names, access codes, tokens, local or public IP addresses,
+        precise locations, private notes, and anything visible in a photo that
+        you do not want indexed on the web.
+
+        Submitting a story does **not** give Animal Room permission to reuse it
+        elsewhere. The final question asks separately, and “no” is completely
+        welcome.
+
+  - type: dropdown
+    id: projects
+    attributes:
+      label: What are you using?
+      options:
+        - Bask
+        - Shed
+        - Haven (Bask + Shed)
+        - I am still evaluating the apps
+    validations:
+      required: true
+
+  - type: textarea
+    id: room
+    attributes:
+      label: Tell us about the setup
+      description: General hardware, operating system, sensor models, display, and collection size are useful. Keep private network details out.
+      placeholder: Raspberry Pi model, OS, sensors, wall display, and the general kind of room or collection...
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem were you trying to solve?
+      placeholder: What was difficult, scattered, or easy to miss before?
+    validations:
+      required: true
+
+  - type: textarea
+    id: outcome
+    attributes:
+      label: What worked well, and what did not?
+      description: Honest rough edges are as useful as success stories.
+      placeholder: What changed in the daily workflow? Where did setup or use still feel awkward?
+    validations:
+      required: true
+
+  - type: textarea
+    id: media
+    attributes:
+      label: Optional photo or video links
+      description: Only share media you own and have checked for private details. Animal and enclosure photos are welcome; people do not need to appear.
+
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check
+      options:
+        - label: I understand this GitHub issue is public and have removed access codes, tokens, addresses, household identities, private notes, and other details I do not want indexed.
+          required: true
+
+  - type: dropdown
+    id: permission
+    attributes:
+      label: May Animal Room feature this story outside this issue?
+      description: Permission can be withdrawn for future uses by commenting here or contacting the project. Existing social posts cannot always be recalled from third-party caches.
+      options:
+        - No — keep it in this public issue only
+        - Yes — you may quote it with my GitHub username
+        - Yes — you may quote it without my username
+    validations:
+      required: true

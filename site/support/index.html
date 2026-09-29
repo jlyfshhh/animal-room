@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Support Animal Room</title>
+  <meta name="description" content="Help Animal Room with an optional tip, a useful bug report, release testing, or a real setup story.">
+  <meta name="theme-color" content="#101310">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; base-uri 'none'; form-action 'none'">
+  <meta name="color-scheme" content="dark light">
+  <meta name="referrer" content="no-referrer">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="canonical" href="https://animalroom.app/support/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Animal Room">
+  <meta property="og:title" content="Support Animal Room">
+  <meta property="og:description" content="Help keep Bask, Shed, and Haven free, tested on real hardware, and useful to animal keepers.">
+  <meta property="og:url" content="https://animalroom.app/support/">
+  <meta property="og:image" content="https://animalroom.app/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Support Animal Room">
+  <meta name="twitter:description" content="Optional ways to support free, local-first animal care tools.">
+  <meta name="twitter:image" content="https://animalroom.app/og.png">
+  <style>
+    :root{--forest:#17382d;--forest-2:#214c3d;--moss:#3f755a;--leaf:#77a77e;--amber:#f2a516;--amber-deep:#d97616;--cream:#fff6e2;--paper:#fffdf8;--ink:#22262e;--muted:#5d6872;--line:#e8e4d9;--ok:#3ca56a;--radius:20px;--max:1060px;--font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);line-height:1.62;-webkit-font-smoothing:antialiased}a{color:var(--forest-2);text-decoration:none}a:hover{text-decoration:underline}a:focus-visible{outline:3px solid var(--amber);outline-offset:3px}h1,h2,h3{margin:0;line-height:1.12;letter-spacing:-.025em}.wrap{width:min(var(--max),calc(100% - 40px));margin:auto}.eyebrow{text-transform:uppercase;letter-spacing:.14em;font-size:.77rem;font-weight:850;color:var(--moss)}
+    header{position:sticky;top:0;z-index:20;border-bottom:1px solid rgba(23,56,45,.1);background:rgba(255,253,248,.92);backdrop-filter:blur(14px)}.nav{min-height:68px;display:flex;align-items:center;justify-content:space-between;gap:20px}.brand{display:flex;align-items:center;gap:10px;font-weight:900;font-size:1.22rem;color:var(--forest);letter-spacing:-.04em}.brand:hover{text-decoration:none}.brand-mark{width:36px;height:36px;display:grid;place-items:center;border-radius:12px;background:var(--forest);color:#d6f0d7}.links{display:flex;align-items:center;gap:20px;font-size:.93rem;font-weight:750}.links a{color:var(--ink)}.links .nav-cta{background:var(--forest);color:#fff;padding:10px 17px;border-radius:999px}.links .nav-cta:hover{background:var(--forest-2);text-decoration:none}
+    .hero{padding:76px 0 62px;background:radial-gradient(circle at 76% 9%,rgba(119,167,126,.24),transparent 36%),linear-gradient(180deg,var(--cream),var(--paper));text-align:center}.hero h1{font-size:clamp(2.45rem,6vw,4.3rem);font-weight:900;color:var(--forest);margin-top:10px}.lead{font-size:clamp(1.06rem,2.3vw,1.28rem);color:var(--muted);max-width:720px;margin:22px auto 0}.button{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:15px 25px;background:var(--forest);color:#fff;font-weight:850;margin-top:29px}.button:hover{background:var(--forest-2);text-decoration:none}.quiet{font-size:.9rem;color:var(--muted);margin:13px auto 0;max-width:660px}
+    section{padding:76px 0}.section-head{text-align:center;max-width:700px;margin:0 auto 42px}.section-head h2{font-size:clamp(1.75rem,4vw,2.45rem);margin-top:8px}.section-head p{color:var(--muted);font-size:1.05rem;margin:14px 0 0}.uses{display:grid;grid-template-columns:repeat(4,1fr);gap:17px}.use{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:24px}.use .icon{font-size:1.6rem}.use h3{font-size:1.06rem;margin:11px 0 6px}.use p{color:var(--muted);margin:0;font-size:.94rem}
+    .goal{background:var(--forest);color:#edf7f1}.goal-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:30px;align-items:center}.goal h2{font-size:clamp(1.75rem,4vw,2.5rem)}.goal p{color:#bed3c7;margin:15px 0 0}.goal-card{background:#21473a;border:1px solid #406a58;border-radius:var(--radius);padding:25px}.goal-card .label{text-transform:uppercase;letter-spacing:.12em;color:#9ec9aa;font-size:.7rem;font-weight:850}.goal-card h3{font-size:1.25rem;margin-top:7px}.goal-card p{font-size:.94rem;margin-top:10px}.goal .button{background:var(--amber);color:#352604;margin-top:20px}.goal .button:hover{background:#ffc252}
+    .help{background:#f2f6ef}.help-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:17px}.help-card{background:#fff;border:1px solid #dae5da;border-radius:var(--radius);padding:25px;display:grid;grid-template-columns:auto 1fr;gap:15px}.help-card .icon{font-size:1.45rem}.help-card h3{font-size:1.06rem}.help-card p{color:var(--muted);margin:6px 0 0;font-size:.94rem}.help-card a{font-weight:800}
+    .promise{max-width:770px;margin:auto;background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:30px;text-align:center}.promise h2{font-size:1.5rem}.promise p{color:var(--muted);margin:12px 0 0}.promise strong{color:var(--forest)}
+    footer{background:var(--forest);color:#bbcec4;padding:50px 0;text-align:center}.footer-brand{font-size:1.45rem;color:#fff;font-weight:900}.footer-links{display:flex;justify-content:center;gap:20px;flex-wrap:wrap;margin:16px 0}.footer-links a{color:#e1c67f;font-weight:750}.footer-note{font-size:.84rem;color:#94aca0;margin:9px auto 0;max-width:700px}
+    @media(max-width:880px){.uses{grid-template-columns:repeat(2,1fr)}.goal-grid{grid-template-columns:1fr}}
+    @media(max-width:620px){.links .hide-small{display:none}.links{gap:12px}.hero{padding-top:54px}.uses,.help-grid{grid-template-columns:1fr}section{padding:60px 0}.help-card{grid-template-columns:1fr}}
+  </style>
+  <script src="/assets/theme-init.js"></script>
+  <link rel="stylesheet" href="/assets/site.css">
+  <script src="/assets/site.js" defer></script>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="brand" href="/"><span class="brand-mark">🌿</span>Animal Room</a>
+      <nav class="links" aria-label="Main navigation"><a class="hide-small" href="/demo/">Demo</a><a class="hide-small" href="/trust/">Trust</a><a href="https://www.instagram.com/thebioactivekeeper">Instagram</a><a class="nav-cta" href="/#install">Install</a></nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap">
+        <div class="eyebrow">Optional · always appreciated</div>
+        <h1>Help Animal Room grow.</h1>
+        <p class="lead">The tools are free and open source. Tips fund test hardware, compatibility work, and the public site.</p>
+        <a class="button" href="https://ko-fi.com/jlyfshhh">Leave a tip on Ko-fi</a>
+        <p class="quiet">Paying unlocks nothing. The apps, updates, documentation, and exports remain available to everyone.</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="uses-heading">
+      <div class="wrap">
+        <div class="section-head"><div class="eyebrow">Where support goes</div><h2 id="uses-heading">What tips pay for.</h2><p>Real hardware makes it possible to test more than one ideal setup.</p></div>
+        <div class="uses">
+          <article class="use"><div class="icon">🌡️</div><h3>Test sensors</h3><p>Requested sensor models, tested against real broadcasts, batteries, and signal conditions.</p></article>
+          <article class="use"><div class="icon">🥧</div><h3>Pi hardware</h3><p>Fresh installs, upgrades, displays, Bluetooth adapters, and different Pi generations.</p></article>
+          <article class="use"><div class="icon">🌐</div><h3>Site and publishing</h3><p>The domain, installer, documentation, demos, and release guidance.</p></article>
+          <article class="use"><div class="icon">🧩</div><h3>Compatibility work</h3><p>Reproducing hardware-specific problems before support is recommended publicly.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="goal" aria-labelledby="goal-heading">
+      <div class="wrap goal-grid">
+        <div><div class="eyebrow" style="color:#9ec9aa">Current priority</div><h2 id="goal-heading">More sensor support.</h2><p>The next hardware funds sensor models keepers request. A model is listed as supported only after it works on real equipment.</p></div>
+        <aside class="goal-card"><div class="label">Why physical testing matters</div><h3>Similar labels can hide different hardware.</h3><p>Real devices reveal differences in broadcasts, identifiers, firmware, signal strength, batteries, restarts, and upgrades.</p></aside>
+      </div>
+    </section>
+
+    <section class="help" aria-labelledby="help-heading">
+      <div class="wrap">
+        <div class="section-head"><div class="eyebrow">No-cost support</div><h2 id="help-heading">Other ways to help.</h2><p>A clear bug report, a setup story, or a well-placed link can be more useful than a tip.</p></div>
+        <div class="help-grid">
+          <article class="help-card"><div class="icon">⭐</div><div><h3>Star or watch the projects</h3><p>Stars help other keepers find the source. Watching releases keeps you updated without a mailing list. <a href="https://github.com/jlyfshhh">Visit the GitHub projects →</a></p></div></article>
+          <article class="help-card"><div class="icon">🧪</div><div><h3>Test a release</h3><p>Try the documented install on hardware you already own, then report the exact model, OS, and result in the appropriate repository.</p></div></article>
+          <article class="help-card"><div class="icon">📝</div><div><h3>Report a reproducible problem</h3><p>Share what you expected, what happened, and the built-in diagnostic report.</p></div></article>
+          <article class="help-card"><div class="icon">📷</div><div><h3>Share a real setup</h3><p><a href="https://github.com/jlyfshhh/animal-room/issues/new?template=setup-story.yml">Use the privacy-conscious setup story form</a> to share what worked and what did not. It asks separately before anything may be featured. You can also follow or tag <a href="https://www.instagram.com/thebioactivekeeper">@thebioactivekeeper on Instagram</a>.</p></div></article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap"><div class="promise"><h2>Always optional.</h2><p>There are no donation popups inside animal care and no features behind payment. <strong>If a tip fits your budget, thank you.</strong> If not, using the tools and sharing honest feedback is plenty.</p></div></div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap"><div class="footer-brand">🌿 Animal Room</div><div class="footer-links"><a href="/demo/">Demo</a><a href="/trust/">How it is built &amp; tested</a><a href="/bask/">Bask</a><a href="/shed/">Shed</a><a href="/haven/">Haven</a><a href="https://www.instagram.com/thebioactivekeeper">Instagram</a></div><p class="footer-note">Free, open-source tools from a working animal room. Support is optional and never changes what the apps can do.</p></div>
+  </footer>
+</body>
+</html>
