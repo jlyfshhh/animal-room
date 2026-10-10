@@ -59,6 +59,131 @@ scrub_readings() {
     -e 's/(animal|enclosure|sensor|species)([\"'"'"']?\s*[:=]\s*)[^[:space:],;}\"]*/\1\2<redacted>/gI'
 }
 
+# ── Ports ────────────────────────────────────────────────────────────────────
+# The installer honors custom ports: BASK_PORT and SHED_PORT in each app's .env
+# become the host side of the container's published port. A health probe fixed
+# on 3000 and 8080 reports a healthy custom-port install as failed, which sends
+# the keeper looking for a fault that is not there. So the port is read from what
+# the install actually does, in this order:
+#   1. the container's published mapping (what is really reachable),
+#   2. the app's .env (what a restart will publish),
+#   3. the default.
+# Only the number is kept. Nothing else from .env is read into the report.
+
+# Prints the value of KEY from a Compose-style .env file: the last assignment
+# wins, a leading "export" is allowed, a CR from Windows editing is dropped, and
+# quotes or a trailing " # comment" are not part of the value. Callers validate
+# what they take from it and never print it unchecked.
+env_setting() {
+  local file="$1" key="$2" line value="" found=false
+  [[ -r "$file" ]] || return 0
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%$'\r'}"
+    line="${line#"${line%%[![:space:]]*}"}"
+    if [[ "$line" == export[[:space:]]* ]]; then
+      line="${line#export}"
+      line="${line#"${line%%[![:space:]]*}"}"
+    fi
+    if [[ "$line" == "$key="* ]]; then
+      value="${line#"$key="}"
+      found=true
+    fi
+  done <"$file"
+  [[ "$found" == true ]] || return 0
+  value="${value#"${value%%[![:space:]]*}"}"
+  case "$value" in
+    \"*) value="${value#\"}"; value="${value%%\"*}" ;;
+    \'*) value="${value#\'}"; value="${value%%\'*}" ;;
+    *)
+      value="${value%%[[:space:]]#*}"
+      value="${value%"${value##*[![:space:]]}"}"
+      ;;
+  esac
+  printf '%s' "$value"
+}
+
+# A usable TCP port number, normalised (08080 -> 8080), or nothing and failure.
+clean_port() {
+  local value="$1" digits='^[0-9]{1,5}$'
+  [[ "$value" =~ $digits ]] || return 1
+  value=$((10#$value))
+  ((value >= 1 && value <= 65535)) || return 1
+  printf '%s' "$value"
+}
+
+# docker prints one "8080/tcp -> 0.0.0.0:8181" line per published port, and a
+# second "[::]:8181" line for IPv6. Takes the one for the app's own port, or else
+# the first published. Sets published_host (where to connect: localhost for a
+# wildcard bind, otherwise the address it is bound to, since a service bound to
+# one LAN address does not answer on localhost) and published_port.
+published_host=""
+published_port=""
+published_endpoint() {
+  local app="$1" internal="$2" line cport addr hport matched=false mapping
+  mapping='^([0-9]+)/tcp -> (.+):([0-9]+)$'
+  published_host=""
+  published_port=""
+  ((${#docker_cmd[@]})) || return 1
+  while IFS= read -r line; do
+    [[ "$line" =~ $mapping ]] || continue
+    cport="${BASH_REMATCH[1]}"
+    addr="${BASH_REMATCH[2]}"
+    hport="${BASH_REMATCH[3]}"
+    # The first line for the app's own port wins; otherwise the first line seen.
+    [[ "$matched" == true ]] && continue
+    if [[ -z "$published_port" || "$cport" == "$internal" ]]; then
+      published_port="$hport"
+      case "$addr" in
+        0.0.0.0|"[::]"|::|"") published_host="localhost" ;;
+        *) published_host="$addr" ;;
+      esac
+      [[ "$cport" != "$internal" ]] || matched=true
+    fi
+  done < <("${docker_cmd[@]}" port "$app" 2>/dev/null)
+  [[ -n "$published_port" ]] && clean_port "$published_port" >/dev/null
+}
+
+# Sets probe_host, probe_port, probe_source and probe_note for one app.
+probe_host="localhost"
+probe_port=""
+probe_source=""
+probe_note=""
+resolve_probe() {
+  local app="$1" dir="$2" port_key="$3" default_port="$4" internal_port="$5" bind_key="$6"
+  local raw env_port="" bind="" ipv4='^[0-9]{1,3}(\.[0-9]{1,3}){3}$'
+  probe_host="localhost"
+  probe_port="$default_port"
+  probe_source="default"
+  probe_note=""
+
+  raw="$(env_setting "$dir/.env" "$port_key")"
+  if [[ -n "$raw" ]]; then
+    env_port="$(clean_port "$raw")" || env_port=""
+    [[ -n "$env_port" ]] ||
+      probe_note="$port_key in .env is not a usable port number (1-65535)"
+  fi
+
+  if published_endpoint "$app" "$internal_port"; then
+    probe_host="$published_host"
+    probe_port="$published_port"
+    probe_source="container mapping"
+    if [[ -n "$env_port" && "$env_port" != "$published_port" ]]; then
+      probe_note="$port_key in .env says $env_port but the container publishes $published_port"
+    fi
+  elif [[ -n "$env_port" ]]; then
+    probe_port="$env_port"
+    probe_source=".env"
+    if [[ -n "$bind_key" ]]; then
+      bind="$(env_setting "$dir/.env" "$bind_key")"
+      if [[ "$bind" =~ $ipv4 && "$bind" != 0.0.0.0 ]]; then
+        probe_host="$bind"
+      fi
+    fi
+  elif [[ -n "$probe_note" ]]; then
+    probe_note="$probe_note; using the default $default_port"
+  fi
+}
+
 # Lets the tests exercise the filters directly. The redaction that matters most
 # runs over container logs, which a fixture without a running container never
 # reaches — so without this hook, turning it off would go unnoticed.
@@ -138,8 +263,10 @@ else
 fi
 
 # ── Apps ─────────────────────────────────────────────────────────────────────
+listen_ports="3000 8080"
 for app in shed bask; do
   dir="$install_root/$app"
+  status=""
   section "$app"
   if [[ ! -d "$dir" ]]; then
     item "install dir" "not present ($dir)"
@@ -213,9 +340,19 @@ for app in shed bask; do
     fi
   fi
 
-  port=$([[ "$app" == shed ]] && echo 3000 || echo 8080)
+  if [[ "$app" == shed ]]; then
+    resolve_probe "$app" "$dir" SHED_PORT 3000 3000 ""
+  else
+    resolve_probe "$app" "$dir" BASK_PORT 8080 8080 BASK_BIND_ADDRESS
+  fi
+  case " $listen_ports " in
+    *" $probe_port "*) ;;
+    *) listen_ports="$listen_ports $probe_port" ;;
+  esac
+  item "health check port" "$probe_port ($probe_source)"
+  [[ -z "$probe_note" ]] || item "port note" "$probe_note"
   if command -v curl >/dev/null 2>&1; then
-    item "local health check" "HTTP $(curl -s -o /dev/null -m 5 -w '%{http_code}' "http://localhost:$port/api/health" 2>/dev/null)"
+    item "local health check" "HTTP $(curl -s -o /dev/null -m 5 -w '%{http_code}' "http://$probe_host:$probe_port/api/health" 2>/dev/null)"
   fi
 
   if ((${#docker_cmd[@]})) && [[ -n "$status" ]]; then
@@ -288,7 +425,9 @@ lan=$(ip -4 -o addr show scope global 2>/dev/null | awk '$2 !~ /^(docker|br-|vet
       | grep -E '^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)' | tr '\n' ' ')
 item "LAN address(es)" "${lan:-none found (private ranges only)}"
 if command -v ss >/dev/null 2>&1; then
-  item "listening" "$(ss -ltn 2>/dev/null | awk '$4 ~ /:(3000|8080)$/ {print $4}' | tr '\n' ' ')"
+  # The default ports plus whatever each install actually uses.
+  listen_pattern=":(${listen_ports// /|})\$"
+  item "listening" "$(ss -ltn 2>/dev/null | awk -v pattern="$listen_pattern" '$4 ~ pattern {print $4}' | tr '\n' ' ')"
 fi
 # Ubuntu-family distributions mediate D-Bus through AppArmor where Debian and
 # Raspberry Pi OS do not, and Bask's scanner reaches BlueZ over the system bus.

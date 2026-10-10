@@ -136,4 +136,287 @@ for genuine in 'ERROR something broke' 'container was OOM killed' 'WARNING disk 
 done
 echo "  routine logs are excluded while genuine problems still appear"
 
+# ── Custom ports ─────────────────────────────────────────────────────────────
+# The installer supports BASK_PORT and SHED_PORT, and the container publishes
+# whatever they say. A health probe fixed on 3000/8080 would report a healthy
+# custom-port install as failed. These run the whole script against a stand-in
+# Docker and curl so every way a port can be configured is covered: the
+# container's published mapping, the app's .env in each syntax Compose accepts,
+# a stale .env that disagrees with the container, a bind address that is not
+# localhost, and values that are not usable ports.
+fake_bin="$work/fake-bin"
+mkdir -p "$fake_bin"
+
+cat >"$fake_bin/docker" <<'SH'
+#!/usr/bin/env bash
+# Stand-in daemon. TEST_CONTAINERS names the containers that exist, and
+# TEST_PORTS_SHED / TEST_PORTS_BASK are what `docker port` prints for them.
+exists() { [[ " ${TEST_CONTAINERS:-} " == *" $1 "* ]]; }
+case "${1:-}" in
+  --version) echo "Docker version 27.0.0, build test" ;;
+  info) exit 0 ;;
+  version) echo "27.0.0" ;;
+  compose) echo "2.29.0" ;;
+  image) echo "linux/arm64" ;;
+  logs) exit 0 ;;
+  port)
+    exists "$2" || exit 1
+    var="TEST_PORTS_$(printf '%s' "$2" | tr '[:lower:]' '[:upper:]')"
+    printf '%b' "${!var:-}"
+    ;;
+  inspect)
+    exists "$2" || exit 1
+    case "${4:-}" in
+      *State.Status*) echo running ;;
+      *RestartCount*) echo 0 ;;
+      *OOMKilled*) echo false ;;
+      *ExitCode*) echo 0 ;;
+      *State.Health*) echo healthy ;;
+      *Config.Image*) echo "ghcr.io/example/$2:latest" ;;
+      *State.Pid*) echo 0 ;;
+      *) echo ;;
+    esac
+    ;;
+  *) exit 1 ;;
+esac
+SH
+
+# Answers 200 only for the host:port pairs in TEST_HEALTHY, as a real curl
+# prints 000 and fails for a connection nothing is listening on.
+cat >"$fake_bin/curl" <<'SH'
+#!/usr/bin/env bash
+url="${!#}"
+printf '%s\n' "$url" >>"${TEST_CURL_LOG:?}"
+hostport="${url#http://}"
+hostport="${hostport%%/*}"
+for healthy in ${TEST_HEALTHY:-}; do
+  if [[ "$healthy" == "$hostport" ]]; then printf '200'; exit 0; fi
+done
+printf '000'
+exit 7
+SH
+
+cat >"$fake_bin/ss" <<'SH'
+#!/usr/bin/env bash
+printf 'State  Recv-Q Send-Q Local Address:Port Peer Address:Port\n'
+for port in 22 3000 3333 3444 4040 8080 8181 8282 9999; do
+  printf 'LISTEN 0      4096   0.0.0.0:%s      0.0.0.0:*\n' "$port"
+done
+SH
+chmod +x "$fake_bin"/*
+
+new_install() {
+  mkdir -p "$1/shed/data" "$1/bask/data"
+  printf 'services:\n' >"$1/shed/compose.yaml"
+  printf 'services:\n' >"$1/bask/compose.yaml"
+  : >"$1/curl.log"
+}
+
+run_doctor() {
+  PATH="$fake_bin:$PATH" TEST_CURL_LOG="$1/curl.log" bash "$doctor" --install-root "$1" 2>&1
+}
+
+section_of() {
+  awk -v heading="=== $2 ===" '$0 == heading {inside = 1; next} /^=== / {inside = 0} inside' <<<"$1"
+}
+
+expect() {
+  local label="$1" text="$2" pattern="$3"
+  grep -qE -- "$pattern" <<<"$text" || {
+    echo "$label: expected /$pattern/ in:" >&2
+    printf '%s\n' "$text" >&2
+    exit 1
+  }
+}
+
+refute() {
+  local label="$1" text="$2" pattern="$3"
+  if grep -qE -- "$pattern" <<<"$text"; then
+    echo "$label: did not expect /$pattern/ in:" >&2
+    printf '%s\n' "$text" >&2
+    exit 1
+  fi
+}
+
+# Unit checks on the two parsers every variant goes through.
+envfile="$work/parse.env"
+printf 'A_PORT=1\nA_PORT="2" # note\nB_PORT=\x27 3 \x27\r\nexport C_PORT=4  # c\nD_PORT=5\r\n' >"$envfile"
+[[ "$(env_setting "$envfile" A_PORT)" == 2 ]] || { echo "env_setting: last assignment, quotes and comment." >&2; exit 1; }
+[[ "$(env_setting "$envfile" B_PORT)" == " 3 " ]] || { echo "env_setting: quoted value must be kept whole." >&2; exit 1; }
+[[ "$(env_setting "$envfile" C_PORT)" == 4 ]] || { echo "env_setting: export and inline comment." >&2; exit 1; }
+[[ "$(env_setting "$envfile" D_PORT)" == 5 ]] || { echo "env_setting: CRLF must not leak into the value." >&2; exit 1; }
+[[ -z "$(env_setting "$envfile" MISSING_PORT)" ]] || { echo "env_setting: absent key must be empty." >&2; exit 1; }
+[[ -z "$(env_setting "$work/no-such.env" A_PORT)" ]] || { echo "env_setting: absent file must be empty." >&2; exit 1; }
+[[ "$(clean_port 08181)" == 8181 ]] || { echo "clean_port: leading zeros are not octal." >&2; exit 1; }
+for bad in "" 0 65536 99999 123456 80a -1 "8 0" 0x50; do
+  if clean_port "$bad" >/dev/null; then
+    echo "clean_port accepted '$bad'." >&2
+    exit 1
+  fi
+done
+
+# Defaults: nothing configured and nothing running probes 3000 and 8080.
+ports_default="$work/ports-default"
+new_install "$ports_default"
+printf 'SHED_TIME_ZONE=UTC\n' >"$ports_default/shed/.env"
+printf 'BASK_DATA_PATH=./data\n' >"$ports_default/bask/.env"
+report="$(TEST_HEALTHY="localhost:3000 localhost:8080" run_doctor "$ports_default")"
+expect "default shed" "$(section_of "$report" shed)" 'health check port +3000 \(default\)'
+expect "default shed" "$(section_of "$report" shed)" 'local health check +HTTP 200'
+expect "default bask" "$(section_of "$report" bask)" 'health check port +8080 \(default\)'
+expect "default bask" "$(section_of "$report" bask)" 'local health check +HTTP 200'
+echo "  default ports are still probed when nothing is customised"
+
+# Ports named in .env, no container yet: the settings a restart will publish.
+ports_env="$work/ports-env"
+new_install "$ports_env"
+printf 'SHED_PORT=3333\nSHED_BOOTSTRAP_TOKEN=%s\n' "$SECRET_TOKEN" >"$ports_env/shed/.env"
+printf 'BASK_PORT=8181\nBASK_KEEPER_KEY=%s\n' "$SECRET_CODE" >"$ports_env/bask/.env"
+report="$(TEST_HEALTHY="localhost:3333 localhost:8181" run_doctor "$ports_env")"
+expect "env shed" "$(section_of "$report" shed)" 'health check port +3333 \(\.env\)'
+expect "env shed" "$(section_of "$report" shed)" 'local health check +HTTP 200'
+expect "env bask" "$(section_of "$report" bask)" 'health check port +8181 \(\.env\)'
+expect "env bask" "$(section_of "$report" bask)" 'local health check +HTTP 200'
+refute "env ports" "$(cat "$ports_env/curl.log")" ':(3000|8080)/'
+expect "listening" "$report" 'listening +.*0\.0\.0\.0:3333'
+expect "listening" "$report" 'listening +.*0\.0\.0\.0:8181'
+refute "listening" "$report" 'listening +.*:(22|9999)( |$)'
+for secret in "$SECRET_TOKEN" "$SECRET_CODE"; do
+  grep -qF -- "$secret" <<<"$report" && { echo "Reading a port leaked a secret value." >&2; exit 1; }
+done
+# The same install with a container that exists but is stopped publishes nothing.
+report="$(TEST_CONTAINERS="shed bask" TEST_HEALTHY="localhost:3333 localhost:8181" run_doctor "$ports_env")"
+expect "stopped shed" "$(section_of "$report" shed)" 'health check port +3333 \(\.env\)'
+expect "stopped bask" "$(section_of "$report" bask)" 'health check port +8181 \(\.env\)'
+echo "  ports named in .env are probed, and no secret travels with them"
+
+# Ports from the container's published mapping, with no port in .env at all.
+ports_map="$work/ports-map"
+new_install "$ports_map"
+printf 'SHED_TIME_ZONE=UTC\n' >"$ports_map/shed/.env"
+printf 'BASK_DATA_PATH=./data\n' >"$ports_map/bask/.env"
+report="$(TEST_CONTAINERS="shed bask" \
+  TEST_PORTS_SHED='3000/tcp -> 0.0.0.0:3444\n3000/tcp -> [::]:3444\n' \
+  TEST_PORTS_BASK='8080/tcp -> 0.0.0.0:8282\n8080/tcp -> [::]:8282\n' \
+  TEST_HEALTHY="localhost:3444 localhost:8282" run_doctor "$ports_map")"
+expect "mapped shed" "$(section_of "$report" shed)" 'health check port +3444 \(container mapping\)'
+expect "mapped shed" "$(section_of "$report" shed)" 'local health check +HTTP 200'
+expect "mapped bask" "$(section_of "$report" bask)" 'health check port +8282 \(container mapping\)'
+expect "mapped bask" "$(section_of "$report" bask)" 'local health check +HTTP 200'
+refute "mapped" "$report" 'port note'
+echo "  the container's published port is probed"
+
+# The container is what is reachable, so a stale .env must not decide the probe —
+# but the disagreement is worth telling whoever reads the report.
+ports_drift="$work/ports-drift"
+new_install "$ports_drift"
+printf 'SHED_PORT=3333\n' >"$ports_drift/shed/.env"
+printf 'BASK_PORT=8181\n' >"$ports_drift/bask/.env"
+report="$(TEST_CONTAINERS="shed bask" \
+  TEST_PORTS_SHED='3000/tcp -> 0.0.0.0:3444\n' \
+  TEST_PORTS_BASK='8080/tcp -> 0.0.0.0:8282\n' \
+  TEST_HEALTHY="localhost:3444 localhost:8282" run_doctor "$ports_drift")"
+expect "drift shed" "$(section_of "$report" shed)" 'health check port +3444 \(container mapping\)'
+expect "drift shed" "$(section_of "$report" shed)" 'port note +.*3333.*3444'
+expect "drift shed" "$(section_of "$report" shed)" 'local health check +HTTP 200'
+expect "drift bask" "$(section_of "$report" bask)" 'health check port +8282 \(container mapping\)'
+expect "drift bask" "$(section_of "$report" bask)" 'port note +.*8181.*8282'
+echo "  a stale .env does not override the container, and is flagged"
+
+# Several published ports: the app's own wins, wherever it is listed; with none of
+# the app's own, the first published port is used.
+ports_multi="$work/ports-multi"
+new_install "$ports_multi"
+printf 'SHED_TIME_ZONE=UTC\n' >"$ports_multi/shed/.env"
+printf 'BASK_DATA_PATH=./data\n' >"$ports_multi/bask/.env"
+report="$(TEST_CONTAINERS="shed bask" \
+  TEST_PORTS_SHED='9229/tcp -> 127.0.0.1:9229\n3000/tcp -> 0.0.0.0:3444\n' \
+  TEST_PORTS_BASK='4000/tcp -> 0.0.0.0:4040\n' \
+  TEST_HEALTHY="localhost:3444 localhost:4040" run_doctor "$ports_multi")"
+expect "multi shed" "$(section_of "$report" shed)" 'health check port +3444 \(container mapping\)'
+expect "multi bask" "$(section_of "$report" bask)" 'health check port +4040 \(container mapping\)'
+echo "  the right published port is chosen when there are several"
+
+# Bask can be bound to one address (BASK_BIND_ADDRESS). A service bound to a LAN
+# address or to loopback only answers there, so the probe goes to that address.
+ports_bind="$work/ports-bind"
+new_install "$ports_bind"
+printf 'SHED_TIME_ZONE=UTC\n' >"$ports_bind/shed/.env"
+printf 'BASK_PORT=8181\nBASK_BIND_ADDRESS=192.168.50.20\n' >"$ports_bind/bask/.env"
+report="$(TEST_HEALTHY="localhost:3000 192.168.50.20:8181" run_doctor "$ports_bind")"
+expect "bind from .env" "$(section_of "$report" bask)" 'health check port +8181 \(\.env\)'
+expect "bind from .env" "$(section_of "$report" bask)" 'local health check +HTTP 200'
+grep -q 'http://192\.168\.50\.20:8181/' "$ports_bind/curl.log" || { echo "Bound address from .env was not probed." >&2; exit 1; }
+grep -qE '192\.168\.50\.20' <<<"$(section_of "$report" bask)" && { echo "The bind address should not be printed." >&2; exit 1; }
+report="$(TEST_CONTAINERS="shed bask" \
+  TEST_PORTS_SHED='3000/tcp -> 0.0.0.0:3000\n' \
+  TEST_PORTS_BASK='8080/tcp -> 127.0.0.1:8181\n' \
+  TEST_HEALTHY="localhost:3000 127.0.0.1:8181" run_doctor "$ports_bind")"
+expect "bind from mapping" "$(section_of "$report" bask)" 'health check port +8181 \(container mapping\)'
+expect "bind from mapping" "$(section_of "$report" bask)" 'local health check +HTTP 200'
+printf 'BASK_PORT=8181\nBASK_BIND_ADDRESS=0.0.0.0\n' >"$ports_bind/bask/.env"
+report="$(TEST_HEALTHY="localhost:3000 localhost:8181" run_doctor "$ports_bind")"
+expect "wildcard bind" "$(section_of "$report" bask)" 'local health check +HTTP 200'
+echo "  a service bound to one address is probed there"
+
+# Every spelling of a port that Compose accepts reads back the same.
+ports_syntax="$work/ports-syntax"
+new_install "$ports_syntax"
+printf 'SHED_TIME_ZONE=UTC\n' >"$ports_syntax/shed/.env"
+check_spelling() {
+  local label="$1" content="$2"
+  printf "$content" >"$ports_syntax/bask/.env"
+  : >"$ports_syntax/curl.log"
+  report="$(TEST_HEALTHY="localhost:3000 localhost:8181" run_doctor "$ports_syntax")"
+  expect "$label" "$(section_of "$report" bask)" 'health check port +8181 \(\.env\)'
+  expect "$label" "$(section_of "$report" bask)" 'local health check +HTTP 200'
+}
+check_spelling "double quotes" 'BASK_PORT="8181"\n'
+check_spelling "single quotes" "BASK_PORT='8181'\n"
+check_spelling "export prefix" 'export BASK_PORT=8181\n'
+check_spelling "inline comment" 'BASK_PORT=8181 # custom\n'
+check_spelling "CRLF line ending" 'BASK_PORT=8181\r\n'
+check_spelling "no trailing newline" 'BASK_PORT=8181'
+check_spelling "last assignment wins" 'BASK_PORT=8080\nBASK_PORT=8181\n'
+check_spelling "leading zeros" 'BASK_PORT=08181\n'
+check_spelling "surrounding settings" 'BASK_DATA_PATH=./data\nBASK_PORT=8181\nBASK_KEEPER_KEY=not-in-report\n'
+refute "settings spelling" "$report" 'not-in-report'
+echo "  every .env spelling of a port is understood"
+
+# Something that is not a port falls back to the default, says so, and never
+# echoes the value — an unusable setting can be anything, including a secret
+# pasted on the wrong line.
+ports_bad="$work/ports-bad"
+new_install "$ports_bad"
+printf 'SHED_TIME_ZONE=UTC\n' >"$ports_bad/shed/.env"
+for bad in not-a-port-s3cr3t 0 65536 99999 123456 80a; do
+  printf 'BASK_PORT=%s\n' "$bad" >"$ports_bad/bask/.env"
+  report="$(TEST_HEALTHY="localhost:3000 localhost:8080" run_doctor "$ports_bad")"
+  expect "bad port $bad" "$(section_of "$report" bask)" 'health check port +8080 \(default\)'
+  expect "bad port $bad" "$(section_of "$report" bask)" 'port note +.*BASK_PORT.*not a usable port.*using the default 8080'
+  expect "bad port $bad" "$(section_of "$report" bask)" 'local health check +HTTP 200'
+  # The note is fixed text; if it were built from the setting it would differ.
+  [[ "$(section_of "$report" bask | sed -n 's/^  port note  *//p')" == \
+     "BASK_PORT in .env is not a usable port number (1-65535); using the default 8080" ]] || {
+    echo "The note for unusable port '$bad' was not the fixed text." >&2
+    exit 1
+  }
+done
+grep -qF 's3cr3t' <<<"$report" && { echo "An unusable port setting was echoed." >&2; exit 1; }
+printf 'BASK_PORT=\n' >"$ports_bad/bask/.env"
+report="$(TEST_HEALTHY="localhost:3000 localhost:8080" run_doctor "$ports_bad")"
+expect "empty port" "$(section_of "$report" bask)" 'health check port +8080 \(default\)'
+refute "empty port" "$(section_of "$report" bask)" 'port note'
+echo "  unusable port settings fall back to the default without being printed"
+
+# A healthy install still reports a failure when the app really is down.
+ports_down="$work/ports-down"
+new_install "$ports_down"
+printf 'SHED_PORT=3333\n' >"$ports_down/shed/.env"
+printf 'BASK_PORT=8181\n' >"$ports_down/bask/.env"
+report="$(TEST_HEALTHY="" run_doctor "$ports_down")"
+expect "down shed" "$(section_of "$report" shed)" 'local health check +HTTP 000'
+expect "down bask" "$(section_of "$report" bask)" 'local health check +HTTP 000'
+echo "  an app that is really down is still reported as down"
+
 echo "Diagnostics tests passed."

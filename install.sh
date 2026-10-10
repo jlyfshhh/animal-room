@@ -189,14 +189,60 @@ bask_required_mb=240
 shed_required_mb=400
 haven_required_mb=650
 
+# What an app that is already running holds, and gives back. MemAvailable is read
+# while that app is still up, but Compose stops the old container before it
+# starts the replacement, so an update gets this memory back. Demanding the full
+# fresh-install floor on top of it rejects the supported rerun-to-update on
+# exactly the small boards that passed the first install. These are the measured
+# footprints above; the floors' extra headroom for the pull and first run is kept.
+bask_running_mb=160
+shed_running_mb=155
+
+# Read-only probe, made before Docker is set up or the DOCKER array exists, so it
+# changes nothing and runs ahead of every backup and rollback step. When Docker is
+# absent or needs a password to reach, nothing is known to be running and the
+# stricter fresh-install requirement stands.
+preflight_docker=()
+find_preflight_docker() {
+  command -v docker >/dev/null 2>&1 || return 1
+  if docker info >/dev/null 2>&1; then
+    preflight_docker=(docker)
+  elif command -v sudo >/dev/null 2>&1 && sudo -n docker info >/dev/null 2>&1; then
+    preflight_docker=(sudo -n docker)
+  else
+    return 1
+  fi
+}
+
+app_container_running() {
+  local state
+  state="$("${preflight_docker[@]}" inspect --format '{{.State.Running}}' "$1" 2>/dev/null)" || return 1
+  [[ "$state" == true ]]
+}
+
+# The requirement is the sum over every selected app, not the largest one:
+# --bask --shed runs both containers even though --haven was not named. Haven
+# selects both apps and keeps its own combined floor, which sits above the sum.
 required_mb=0
-if [[ "$select_haven" == true ]]; then
+[[ "$select_bask" != true ]] || required_mb=$((required_mb + bask_required_mb))
+[[ "$select_shed" != true ]] || required_mb=$((required_mb + shed_required_mb))
+if [[ "$select_haven" == true ]] && ((required_mb < haven_required_mb)); then
   required_mb="$haven_required_mb"
-elif [[ "$select_shed" == true ]]; then
-  required_mb="$shed_required_mb"
-elif [[ "$select_bask" == true ]]; then
-  required_mb="$bask_required_mb"
 fi
+
+running_credit_mb=0
+running_apps=""
+if ((required_mb > 0)) && find_preflight_docker; then
+  if [[ "$select_bask" == true ]] && app_container_running bask; then
+    running_credit_mb=$((running_credit_mb + bask_running_mb))
+    running_apps="${running_apps:+$running_apps and }Bask"
+  fi
+  if [[ "$select_shed" == true ]] && app_container_running shed; then
+    running_credit_mb=$((running_credit_mb + shed_running_mb))
+    running_apps="${running_apps:+$running_apps and }Shed"
+  fi
+fi
+required_mb=$((required_mb - running_credit_mb))
 
 if ((required_mb > 0)); then
   if available_memory_mb="$(memory_available_mb)"; then
@@ -205,7 +251,11 @@ if ((required_mb > 0)); then
       if total_memory_mb="$(memory_total_mb)"; then
         total_note=" of ${total_memory_mb} MB total"
       fi
-      die "${selection[*]} needs about ${required_mb} MB of free memory; this host has ${available_memory_mb} MB free${total_note}.
+      credit_note=""
+      if ((running_credit_mb > 0)); then
+        credit_note=" (already net of the ${running_credit_mb} MB the running ${running_apps} holds and gives back while updating)"
+      fi
+      die "${selection[*]} needs about ${required_mb} MB of free memory${credit_note}; this host has ${available_memory_mb} MB free${total_note}.
     A desktop session is the usual reason — Raspberry Pi OS Lite (or booting to
     the console) typically frees 500-700 MB. Closing a browser on the machine
     helps too. Bask alone is the lightest option and can be installed with --bask."
@@ -406,23 +456,49 @@ fail_with_rollback() {
 [[ "$select_shed" != true ]] || snapshot_app shed "$install_root/shed"
 rollback_armed=true
 
+# Runs one child installer, and returns nonzero without running it unless the
+# whole script arrived and parses. The caller invokes this as `if ! ...`, which
+# switches errexit (and the ERR trap) off for everything inside the function — so
+# `set -e` protects nothing here, and every step states its own failure with an
+# explicit `|| return`. Relying on it let a download that died after writing a
+# syntactically valid prefix still be executed and reported as a success.
 run_remote_installer() {
   local app="$1" source="$2" variable="$3" destination="$4"
+  local script app_slug
   say "Installing $app"
+
   if [[ -f "$source" ]]; then
-    bash -n "$source"
-    env "$variable=$destination" bash "$source"
-    return
+    script="$source"
+  elif [[ "$source" != *://* ]]; then
+    # Not a URL, so it can only have been meant as a file path.
+    warn "$app's installer script was not found: $source"
+    return 1
+  else
+    # Finish the download and check it before executing anything. This avoids
+    # the partial-script behavior of curl | bash on a dropped connection: a
+    # transfer that fails midway leaves a file that may still parse, so the exit
+    # status of curl, not the file, decides whether it is complete.
+    app_slug="$(printf '%s' "$app" | tr '[:upper:]' '[:lower:]')" || return 1
+    script="$rollback_root/${app_slug}-installer.sh"
+    rm -f "$script"
+    if ! curl -fsSL "$source" -o "$script"; then
+      rm -f "$script"
+      warn "Could not download $app's installer completely from $source; nothing was run."
+      return 1
+    fi
   fi
 
-  # Finish the download and syntax-check it before executing anything. This
-  # avoids the partial-script behavior of curl | bash on a dropped connection.
-  local app_slug downloaded
-  app_slug="$(printf '%s' "$app" | tr '[:upper:]' '[:lower:]')"
-  downloaded="$rollback_root/${app_slug}-installer.sh"
-  curl -fsSL "$source" -o "$downloaded"
-  bash -n "$downloaded"
-  env "$variable=$destination" bash "$downloaded"
+  if [[ ! -s "$script" ]]; then
+    warn "$app's installer script is missing or empty; nothing was run."
+    return 1
+  fi
+  if ! bash -n "$script"; then
+    warn "$app's installer script failed its syntax check; nothing was run."
+    return 1
+  fi
+
+  # The child's own exit status is the status of this function.
+  env "$variable=$destination" bash "$script" || return $?
 }
 
 if [[ "$select_bask" == true ]]; then
