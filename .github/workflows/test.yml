@@ -18,13 +18,15 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Syntax
-        run: bash -n install.sh uninstall.sh doctor.sh scripts/privacy-scan.sh tests/install.sh tests/uninstall.sh tests/doctor.sh tests/privacy-scan.sh tests/site.sh
+        run: bash -n install.sh uninstall.sh doctor.sh scripts/privacy-scan.sh scripts/animal-app-backup tests/install.sh tests/uninstall.sh tests/doctor.sh tests/privacy-scan.sh tests/site.sh tests/backup.sh
       - name: Selection behavior
         run: bash tests/install.sh
       - name: Uninstaller behavior
         run: bash tests/uninstall.sh
       - name: Diagnostics leak nothing
         run: bash tests/doctor.sh
+      - name: Backup wrapper behavior
+        run: bash tests/backup.sh
       - name: Privacy scan behavior
         run: bash tests/privacy-scan.sh
       - name: Public site behavior

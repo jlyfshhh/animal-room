@@ -6,13 +6,70 @@
 # archives from being cleaned up, which is exactly what went wrong when Clarity
 # was archived: the job died on a missing directory, and retention had not run
 # since, so the backup device was filling.
+#
+# The opposite rule is just as important: a failure is never reported as a
+# success. An app counts as backed up only when ALL of these are true:
+#   1. its own backup command exited zero,
+#   2. that command left a NEW database/archive file (*.sqlite, *.tar.gz) in the
+#      destination — a settings copy (*.env) is never a data backup, and
+#   3. for Shed, the settings copy needed to restore it was written and matches.
+# Anything else is recorded under "failed" in the status file, printed to
+# stderr, and makes this script exit non-zero (so the service shows failed).
+# Database/archive files and settings copies are counted separately everywhere.
+#
+# Configuration (environment variables; for the scheduled job set them in the
+# systemd unit — for example `systemctl edit animal-app-backup.service` — rather
+# than editing this script):
+#
+#   ANIMAL_ROOM_HOME             Directory containing the installed apps (bask/,
+#                                shed/). Defaults to $HOME, the installer's own
+#                                default. A system service runs as root, whose
+#                                $HOME is NOT where an ordinary user installed
+#                                the apps, so set this explicitly there. If none
+#                                of the selected apps is found the run FAILS; it
+#                                never "succeeds" having backed up nothing.
+#   ANIMAL_BACKUP_ROOT           Destination. Must already exist (it is not
+#                                created, so a missing mount cannot silently
+#                                turn into a folder on the wrong device).
+#                                Default: /srv/sd-backup/var/backups/animal-apps
+#   ANIMAL_BACKUP_REQUIRE_MOUNT  A mount point that must be mounted, and must
+#                                contain ANIMAL_BACKUP_ROOT, before anything is
+#                                written. Strongly recommended.
+#   ANIMAL_BACKUP_ALLOW_EXTERNAL true or false (default false). The apps' own
+#                                backup tools refuse a destination outside the
+#                                app's folder unless explicitly allowed; that
+#                                guard stays on. Setting this to true is the
+#                                explicit opt-in for THIS job only: it passes
+#                                SHED_ALLOW_EXTERNAL_PATHS=true and
+#                                BASK_ALLOW_EXTERNAL_PATHS=true to those
+#                                commands. It is accepted only together with
+#                                ANIMAL_BACKUP_REQUIRE_MOUNT, so it can apply
+#                                only to a verified, dedicated mount. The apps'
+#                                .env files are not modified.
+#   ANIMAL_BACKUP_APPS           Space-separated apps to try. Default: bask shed
+#   ANIMAL_BACKUP_KEEP           Days of archives to keep. Default: 30
+#   ANIMAL_BACKUP_STATUS         Status file. Default: $ANIMAL_BACKUP_ROOT/status.json
+#
+# Example systemd drop-in (placeholders, adjust to your machine):
+#   [Unit]
+#   RequiresMountsFor=/srv/backup-disk
+#   [Service]
+#   Environment=ANIMAL_ROOM_HOME=/home/USER
+#   Environment=ANIMAL_BACKUP_ROOT=/srv/backup-disk/animal-apps
+#   Environment=ANIMAL_BACKUP_REQUIRE_MOUNT=/srv/backup-disk
+#   Environment=ANIMAL_BACKUP_ALLOW_EXTERNAL=true
+#
+# Written to run on bash 3.2 and newer.
 set -uo pipefail
 umask 077
 
 backup_root="${ANIMAL_BACKUP_ROOT:-/srv/sd-backup/var/backups/animal-apps}"
-install_root="${ANIMAL_ROOM_HOME:-/home/cc}"
+# The same default install.sh, uninstall.sh and doctor.sh use.
+install_root="${ANIMAL_ROOM_HOME:-${HOME:-}}"
 retention_days="${ANIMAL_BACKUP_KEEP:-30}"
-status_file="${ANIMAL_BACKUP_STATUS:-$backup_root/status.json}"
+status_file="${ANIMAL_BACKUP_STATUS:-}"
+require_mount="${ANIMAL_BACKUP_REQUIRE_MOUNT:-}"
+allow_external="${ANIMAL_BACKUP_ALLOW_EXTERNAL:-false}"
 stamp="$(date +%Y%m%d-%H%M%S)"
 
 # Apps to try. Absent ones are skipped, not failed: uninstalling an app is a
@@ -21,75 +78,314 @@ apps="${ANIMAL_BACKUP_APPS:-bask shed}"
 
 failures=()
 succeeded=()
+skipped=()
+app_problems=()
+new_archive=""
+scan_apps=true
 
 note() { printf '%s\n' "$*"; }
 fail() { printf 'ERROR: %s\n' "$*" >&2; }
+# Record something wrong with the app currently being backed up.
+problem() { app_problems[${#app_problems[@]}]="$*"; fail "$*"; }
 
-require_mount() {
+json_escape() { printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'; }
+
+# Database/archive files only — the things a restore actually needs. Settings
+# copies (*.env) and in-progress hidden partials are deliberately excluded.
+list_archives() {
+  find "$1" -maxdepth 1 -type f ! -name '.*' \( -name '*.sqlite' -o -name '*.tar.gz' \) -print 2>/dev/null \
+    | sed 's#.*/##' | sort
+}
+list_settings() {
+  find "$1" -maxdepth 1 -type f ! -name '.*' -name '*.env' -print 2>/dev/null | sed 's#.*/##' | sort
+}
+count_lines() { grep -c . || true; }
+# Names present in $2 but not in $1 (both newline-separated).
+new_names() {
+  comm -13 <(printf '%s\n' "$1" | sort) <(printf '%s\n' "$2" | sort) | grep -v '^$' || true
+}
+latest_archive() {
+  ls -1t "$1"/*.sqlite "$1"/*.tar.gz 2>/dev/null | head -n 1 | sed 's#.*/##'
+}
+latest_settings() {
+  ls -1t "$1"/*.env 2>/dev/null | head -n 1 | sed 's#.*/##'
+}
+
+# An operator-visible record, so "is the backup working?" has an answer that
+# does not involve reading journald. No private data: paths, counts, and sizes.
+write_status() {
+  local tmp="$status_file.tmp" i first app dir free ok
+  free="$(df -Pk "$backup_root" 2>/dev/null | awk 'NR==2{print $4}')"
+  ok=false
+  if [ "${#failures[@]}" -eq 0 ] && [ "${#succeeded[@]}" -gt 0 ]; then ok=true; fi
+  {
+    printf '{\n'
+    printf '  "ran_at": "%s",\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    printf '  "ok": %s,\n' "$ok"
+    printf '  "succeeded": ['
+    i=0
+    while [ "$i" -lt "${#succeeded[@]}" ]; do
+      if [ "$i" -gt 0 ]; then printf ', '; fi
+      printf '"%s"' "$(json_escape "${succeeded[$i]}")"
+      i=$((i + 1))
+    done
+    printf '],\n'
+    printf '  "failed": ['
+    i=0
+    while [ "$i" -lt "${#failures[@]}" ]; do
+      if [ "$i" -gt 0 ]; then printf ', '; fi
+      printf '"%s"' "$(json_escape "${failures[$i]}")"
+      i=$((i + 1))
+    done
+    printf '],\n'
+    printf '  "skipped": ['
+    i=0
+    while [ "$i" -lt "${#skipped[@]}" ]; do
+      if [ "$i" -gt 0 ]; then printf ', '; fi
+      printf '"%s"' "$(json_escape "${skipped[$i]}")"
+      i=$((i + 1))
+    done
+    printf '],\n'
+    printf '  "free_kb": %s,\n' "${free:-null}"
+    # "archives" counts database/archive files only; settings copies are
+    # reported on their own so they cannot stand in for a current data backup.
+    printf '  "apps": {'
+    first=true
+    if [ "$scan_apps" = true ]; then
+      for app in $apps; do
+        dir="$backup_root/$app"
+        [ -d "$dir" ] || continue
+        if [ "$first" = true ]; then printf '\n'; else printf ',\n'; fi
+        first=false
+        printf '    "%s": {"latest": "%s", "archives": %s, "latest_settings": "%s", "settings_copies": %s}' \
+          "$(json_escape "$app")" \
+          "$(json_escape "$(latest_archive "$dir")")" \
+          "$(list_archives "$dir" | count_lines)" \
+          "$(json_escape "$(latest_settings "$dir")")" \
+          "$(list_settings "$dir" | count_lines)"
+      done
+    fi
+    if [ "$first" = true ]; then printf '}\n'; else printf '\n  }\n'; fi
+    printf '}\n'
+  } > "$tmp" && mv -f "$tmp" "$status_file"
+}
+
+# Stop the whole run. The status file is written only when the operator chose a
+# location for it that is not inside the (possibly unmounted) backup root, so an
+# aborted run can never put files on the wrong device.
+abort_run() {
+  fail "$1"
+  failures[${#failures[@]}]="$1"
+  if [ -n "${ANIMAL_BACKUP_STATUS:-}" ]; then
+    case "$status_file" in
+      "$backup_root"/*) ;;
+      *)
+        if [ -d "$(dirname -- "$status_file")" ]; then
+          scan_apps=false
+          write_status || fail "could not write status file $status_file"
+        fi
+        ;;
+    esac
+  fi
+  exit 1
+}
+
+preflight() {
+  case "$allow_external" in
+    true|false) ;;
+    *) abort_run "ANIMAL_BACKUP_ALLOW_EXTERNAL must be true or false, not '$allow_external'." ;;
+  esac
+  case "$retention_days" in
+    ''|*[!0-9]*) abort_run "ANIMAL_BACKUP_KEEP must be a whole number of days, not '$retention_days'." ;;
+  esac
+  case "$backup_root" in
+    /*) ;;
+    *) abort_run "ANIMAL_BACKUP_ROOT must be an absolute path, not '$backup_root'." ;;
+  esac
+  if [ -z "$install_root" ] || [ ! -d "$install_root" ]; then
+    abort_run "the install root '$install_root' is not a directory; set ANIMAL_ROOM_HOME to the directory the apps were installed into."
+  fi
+  if [ "$allow_external" = true ] && [ -z "$require_mount" ]; then
+    abort_run "ANIMAL_BACKUP_ALLOW_EXTERNAL=true is only accepted together with ANIMAL_BACKUP_REQUIRE_MOUNT, so the opt-in covers a verified dedicated mount and nothing else."
+  fi
+
   # Writing "backups" onto the same failing SD card the apps live on is not a
   # backup. If the destination is meant to be a mount and is not mounted, stop.
-  if [ -n "${ANIMAL_BACKUP_REQUIRE_MOUNT:-}" ]; then
-    mountpoint -q "$ANIMAL_BACKUP_REQUIRE_MOUNT" || {
-      fail "$ANIMAL_BACKUP_REQUIRE_MOUNT is not mounted; refusing to write backups to the wrong device."
-      exit 1
-    }
+  if [ -n "$require_mount" ]; then
+    case "$require_mount" in
+      /) abort_run "ANIMAL_BACKUP_REQUIRE_MOUNT cannot be / ; name the dedicated backup mount." ;;
+      /*) ;;
+      *) abort_run "ANIMAL_BACKUP_REQUIRE_MOUNT must be an absolute path, not '$require_mount'." ;;
+    esac
+    command -v mountpoint >/dev/null 2>&1 \
+      || abort_run "the mountpoint command is not available, so $require_mount cannot be verified; refusing to write backups."
+    mountpoint -q "$require_mount" \
+      || abort_run "$require_mount is not mounted; refusing to write backups to the wrong device."
   fi
+
+  # Never create the destination itself: a missing directory means the mount or
+  # the setup is wrong, and manufacturing it would put backups on the wrong disk.
+  [ -d "$backup_root" ] \
+    || abort_run "backup destination $backup_root does not exist; mount or create it first."
+  backup_root="$(cd -- "$backup_root" && pwd -P)" \
+    || abort_run "cannot resolve backup destination $backup_root."
+  if [ -n "$require_mount" ]; then
+    local mount_real
+    mount_real="$(cd -- "$require_mount" && pwd -P)" \
+      || abort_run "cannot resolve $require_mount."
+    case "$backup_root/" in
+      "${mount_real%/}/"*) ;;
+      *) abort_run "backup destination $backup_root is not inside the required mount $mount_real; refusing to write backups." ;;
+    esac
+  fi
+  if [ -z "$status_file" ]; then status_file="$backup_root/status.json"; fi
 }
 
-backup_bask() {
-  local dir="$install_root/bask"
-  [ -d "$dir" ] || return 2
-  mkdir -p "$backup_root/bask"
-  BASK_BACKUP_PATH="$backup_root/bask" "$dir/scripts/backup.sh" >/dev/null
+# Run an app's own backup command with that app's settings. The external-path
+# opt-in is passed to this one child process only when explicitly configured;
+# the apps' path validation itself is never switched off.
+run_child() {
+  local app="$1" dir="$2" dest="$3"
+  (
+    case "$app" in
+      shed)
+        export SHED_INSTALL_DIR="$dir" SHED_BACKUP_PATH="$dest" SHED_BACKUP_KEEP="$retention_days"
+        if [ "$allow_external" = true ]; then export SHED_ALLOW_EXTERNAL_PATHS=true; fi
+        ;;
+      bask)
+        export BASK_BACKUP_PATH="$dest"
+        if [ "$allow_external" = true ]; then export BASK_ALLOW_EXTERNAL_PATHS=true; fi
+        ;;
+    esac
+    exec "$dir/scripts/backup.sh"
+  )
 }
 
-backup_shed() {
-  local dir="$install_root/shed"
-  [ -d "$dir" ] || return 2
-  mkdir -p "$backup_root/shed"
+# Run the app's own backup command, then check what it actually left behind. A
+# zero exit alone is not enough: the destination must hold a new, non-empty
+# database/archive file, or nothing was backed up.
+backup_with_child() {
+  local app="$1" dir="$install_root/$1" dest="$backup_root/$1"
+  local before after new out rc name
+  if [ ! -x "$dir/scripts/backup.sh" ]; then
+    problem "$app: $dir/scripts/backup.sh is missing or not executable"
+    return 1
+  fi
+  if ! mkdir -p "$dest"; then
+    problem "$app: cannot create $dest"
+    return 1
+  fi
+  before="$(list_archives "$dest")"
   # Shed's own script picks the live database, takes a consistent copy through
   # SQLite's backup API, verifies it, and handles retention. Do not reimplement
   # any of that here.
-  SHED_INSTALL_DIR="$dir" SHED_BACKUP_PATH="$backup_root/shed" \
-    SHED_BACKUP_KEEP="$retention_days" "$dir/scripts/backup.sh" >/dev/null
-  # The settings file is not in the database and is needed to restore. Written
-  # as `if`: a trailing `[ -f x ] && ...` makes the function return 1 when the
-  # file is absent, reporting a perfectly good backup as a failure.
-  if [ -f "$dir/.env" ]; then
-    install -m 600 "$dir/.env" "$backup_root/shed/shed-$stamp.env"
+  out="$(run_child "$app" "$dir" "$dest")"
+  rc=$?
+  if [ "$rc" -ne 0 ]; then
+    problem "$app: database backup command failed (exit $rc)"
+    if [ "$allow_external" != true ]; then
+      fail "hint: if the error above says a path 'resolves outside' the app, this destination needs the explicit opt-in ANIMAL_BACKUP_ALLOW_EXTERNAL=true together with ANIMAL_BACKUP_REQUIRE_MOUNT=<mount point>. The apps' path validation is not being bypassed."
+    fi
+    return "$rc"
   fi
+  after="$(list_archives "$dest")"
+  new="$(new_names "$before" "$after")"
+  if [ -z "$new" ]; then
+    problem "$app: backup command exited 0 but left no new database archive in $dest"
+    return 1
+  fi
+  while IFS= read -r name; do
+    if [ ! -s "$dest/$name" ]; then
+      problem "$app: new archive $name is empty"
+      return 1
+    fi
+    new_archive="$name"
+  done <<EOF
+$new
+EOF
+  if [ -n "$out" ]; then note "$app: $(printf '%s\n' "$out" | tail -n 1)"; fi
   return 0
 }
 
-require_mount
+backup_bask() {
+  backup_with_child bask
+}
+
+backup_shed() {
+  local dir="$install_root/shed" dest="$backup_root/shed" rc=0
+  backup_with_child shed || rc=$?
+  # The settings file is not in the database and is needed to restore. It is
+  # copied whether or not the database step worked (restoring needs both), but a
+  # failed copy fails the app, and it is counted apart from database archives.
+  # Written as `if`: a trailing `[ -f x ] && ...` returns 1 when the file is
+  # absent, which would report a perfectly good backup as a failure.
+  if [ -f "$dir/.env" ]; then
+    if ! install -m 600 "$dir/.env" "$dest/shed-$stamp.env" \
+        || ! cmp -s "$dir/.env" "$dest/shed-$stamp.env"; then
+      problem "shed: settings copy to $dest/shed-$stamp.env failed"
+      if [ "$rc" -eq 0 ]; then rc=1; fi
+    fi
+  else
+    fail "warning: no settings file at $dir/.env; only the database can be restored"
+  fi
+  return "$rc"
+}
+
+preflight
 
 for app in $apps; do
   if ! declare -F "backup_$app" >/dev/null; then
     fail "no backup routine for '$app'"
-    failures+=("$app: unknown app")
+    failures[${#failures[@]}]="$app: unknown app"
     continue
   fi
-  set +e
+  if [ ! -d "$install_root/$app" ]; then
+    note "skipping $app — not installed at $install_root/$app"
+    skipped[${#skipped[@]}]="$app"
+    continue
+  fi
+  app_problems=()
+  new_archive=""
   "backup_$app"
   code=$?
-  set -e
-  case "$code" in
-    0) succeeded+=("$app"); note "backed up $app" ;;
-    2) note "skipping $app — not installed at $install_root/$app" ;;
-    *) fail "$app backup failed (exit $code)"; failures+=("$app: exit $code") ;;
-  esac
+  if [ "$code" -eq 0 ] && [ "${#app_problems[@]}" -eq 0 ]; then
+    succeeded[${#succeeded[@]}]="$app"
+    note "backed up $app (new archive: $new_archive; database archives on hand: $(list_archives "$backup_root/$app" | count_lines); settings copies on hand: $(list_settings "$backup_root/$app" | count_lines))"
+  else
+    [ "$code" -ne 0 ] || code=1
+    reason=""
+    i=0
+    while [ "$i" -lt "${#app_problems[@]}" ]; do
+      reason="${reason:+$reason; }${app_problems[$i]}"
+      i=$((i + 1))
+    done
+    failures[${#failures[@]}]="${reason:-$app: exit $code}"
+    fail "$app backup failed (exit $code)"
+  fi
 done
+
+# Selecting apps that are not installed anywhere is a setup error (typically a
+# wrong ANIMAL_ROOM_HOME), not a clean run. Skipping everything must not look
+# like success.
+if [ "${#succeeded[@]}" -eq 0 ] && [ "${#failures[@]}" -eq 0 ]; then
+  msg="nothing was backed up: none of ($apps) is installed under $install_root; set ANIMAL_ROOM_HOME to the directory the apps were installed into."
+  fail "$msg"
+  failures[${#failures[@]}]="$msg"
+fi
 
 # Retention runs whatever happened above. Each app keeps its most recent
 # archive regardless of age, so a machine that has been off for months still
 # has something to restore from.
 prune() {
-  local dir="$1" pattern="$2" newest
+  local dir="$1" pattern="$2" newest old
   [ -d "$dir" ] || return 0
   newest="$(ls -1t "$dir"/$pattern 2>/dev/null | head -n 1 || true)"
   while IFS= read -r old; do
     if [ -n "$old" ] && [ "$old" != "$newest" ]; then
-      rm -f "$old" || fail "could not remove $old"
+      if ! rm -f "$old"; then
+        fail "could not remove $old"
+        failures[${#failures[@]}]="retention: could not remove $old"
+      fi
     fi
   done < <(find "$dir" -maxdepth 1 -type f -name "$pattern" -mtime "+$retention_days" 2>/dev/null)
 }
@@ -100,41 +396,14 @@ for app in $apps; do
   prune "$backup_root/$app" "*.env"
 done
 
-# An operator-visible record, so "is the backup working?" has an answer that
-# does not involve reading journald. No private data: paths, counts, and sizes.
-{
-  printf '{\n'
-  printf '  "ran_at": "%s",\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  printf '  "succeeded": ['
-  for i in "${!succeeded[@]}"; do
-    [ "$i" -gt 0 ] && printf ', '
-    printf '"%s"' "${succeeded[$i]}"
-  done
-  printf '],\n'
-  printf '  "failed": ['
-  for i in "${!failures[@]}"; do
-    [ "$i" -gt 0 ] && printf ', '
-    printf '"%s"' "${failures[$i]}"
-  done
-  printf '],\n'
-  printf '  "free_kb": %s,\n' "$(df -Pk "$backup_root" 2>/dev/null | awk 'NR==2{print $4}')"
-  printf '  "apps": {\n'
-  first=true
-  for app in $apps; do
-    dir="$backup_root/$app"
-    [ -d "$dir" ] || continue
-    [ "$first" = true ] || printf ',\n'
-    first=false
-    latest="$(ls -1t "$dir" 2>/dev/null | head -n 1 || true)"
-    count="$(find "$dir" -maxdepth 1 -type f 2>/dev/null | wc -l | tr -d ' ')"
-    printf '    "%s": {"latest": "%s", "archives": %s}' "$app" "$latest" "$count"
-  done
-  printf '\n  }\n}\n'
-} > "$status_file.tmp" && mv -f "$status_file.tmp" "$status_file"
+if ! write_status; then
+  fail "could not write status file $status_file"
+  exit 1
+fi
 chmod 644 "$status_file" 2>/dev/null || true
 
 if [ "${#failures[@]}" -gt 0 ]; then
-  fail "${#failures[@]} app(s) failed: ${failures[*]}"
+  fail "${#failures[@]} problem(s): ${failures[*]}"
   exit 1
 fi
 note "all backups complete; status written to $status_file"
