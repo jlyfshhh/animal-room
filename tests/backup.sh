@@ -288,6 +288,27 @@ expect_err "refusing to delete through it"
   || fail_test "retention deleted a file outside the backup root through a symlink"
 echo "  retention refuses to delete through a symlinked per-app destination"
 
+# ── A validated Bask destination must not leak into a failing Shed ───────────
+# dest_ok is global. With the default Bask-then-Shed order, a successful Bask
+# validation used to survive into Shed when Shed returned early (a missing or
+# non-executable helper) before validating its own destination. If Shed's
+# destination is then a symlink off the backup root, the settings copy would ride
+# that stale dest_ok and escape the mount. A nonzero exit after an escaped write
+# is not enough: nothing may be created outside the root.
+reset
+rm -f "$home/shed/scripts/backup.sh"          # Shed helper absent -> early return
+outside="$work/outside"
+rm -rf "$outside"; mkdir -p "$outside"
+rm -rf "$dest/shed"
+ln -s "$outside" "$dest/shed"                 # Shed destination escapes the root
+run_wrapper ANIMAL_BACKUP_APPS="bask shed"
+[ "$code" -ne 0 ] || fail_test "a Bask pass leaked into a missing-helper Shed with a symlinked destination"
+expect_out "backed up bask"                   # Bask still succeeded first
+expect_json "'shed' in d['succeeded']" False
+[ -z "$(find "$outside" -type f)" ] \
+  || fail_test "Shed's settings copy escaped the backup root through a symlink after a Bask pass"
+echo "  a validated Bask destination does not leak into a missing-helper Shed"
+
 # ── Install root comes from configuration or the installer's default ─────────
 reset
 run_wrapper ANIMAL_ROOM_HOME=

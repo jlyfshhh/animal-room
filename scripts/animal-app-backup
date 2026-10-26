@@ -303,11 +303,16 @@ validate_dest() {
 backup_with_child() {
   local app="$1" dir="$install_root/$1" dest="$backup_root/$1"
   local before after new out rc name
+  # Validate THIS app's destination before any other early return. validate_dest
+  # resets dest_ok for the app it checks; doing it first means a missing helper
+  # below (or any later failure) can never leave the previous app's successful
+  # dest_ok in place — which is how a Bask pass used to leak into Shed and let
+  # the settings copy escape an unvalidated destination.
+  validate_dest "$app" || return 1
   if [ ! -x "$dir/scripts/backup.sh" ]; then
     problem "$app: $dir/scripts/backup.sh is missing or not executable"
     return 1
   fi
-  validate_dest "$app" || return 1
   before="$(list_archives "$dest")"
   # Shed's own script picks the live database, takes a consistent copy through
   # SQLite's backup API, verifies it, and handles retention. Do not reimplement
