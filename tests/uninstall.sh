@@ -59,6 +59,16 @@ for app in bask shed; do
   # The checkout around them goes.
   [[ ! -e "$work/keep/$app/README.md" ]] || { echo "$app checkout survived." >&2; exit 1; }
   [[ ! -e "$work/keep/$app/.git" ]] || { echo "$app .git survived." >&2; exit 1; }
+
+  # ── QC-F13: a retained-data marker is left so reinstall-in-place (here or on
+  # another machine) can re-establish the checkout around the preserved records
+  # instead of refusing a non-checkout directory. get-bask.sh consumes it.
+  marker="$work/keep/$app/.animal-room-retained-data"
+  [[ -f "$marker" ]] || { echo "$app retained-data marker was not written." >&2; exit 1; }
+  # The header's first line is a fixed contract shared with get-bask.sh.
+  [[ "$(sed -n '1p' "$marker")" == "animal-room retained-data v1" ]] || {
+    echo "$app marker header is not exactly 'animal-room retained-data v1'." >&2; exit 1; }
+  [[ -n "$(sed -n '2p' "$marker")" ]] || { echo "$app marker has no timestamp line." >&2; exit 1; }
 done
 
 # --- purge backs up before deleting ------------------------------------------
@@ -72,6 +82,12 @@ purge_output="$(bash "$uninstall" --shed --install-root "$work/purge" --purge --
 
 backup="$(find "$work/purge" -maxdepth 1 -name 'shed-backup-*.tar.gz' | head -n 1)"
 [[ -n "$backup" ]] || { echo "--purge wrote no backup archive." >&2; exit 1; }
+
+# A full purge deletes the records, so it must NOT leave a retained-data marker
+# anywhere under the install root — the marker promises preserved data that a
+# purge has just destroyed.
+[[ -z "$(find "$work/purge" -name '.animal-room-retained-data')" ]] || {
+  echo "--purge wrote a retained-data marker." >&2; exit 1; }
 
 # The archive can contain .env, so it must not be readable by anyone else.
 mode="$(stat -c '%a' "$backup" 2>/dev/null || stat -f '%Lp' "$backup")"

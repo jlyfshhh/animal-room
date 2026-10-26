@@ -210,6 +210,44 @@ first and prints the path, then asks you to type `PURGE` to confirm.
 Docker is never removed automatically; other things on the machine may be using
 it. The uninstaller prints the commands if you want it gone.
 
+### Reinstalling in place, and moving to another machine
+
+A default uninstall keeps each app's `data/`, `backups/`, and `.env` exactly
+where they are and removes only the checkout around them — including the hidden
+`.git` folder, which is what tells the tools a directory is a live checkout.
+With `.git` gone the directory no longer looks like a checkout, so the
+uninstaller leaves a small marker file named `.animal-room-retained-data` beside
+the preserved records. Its first line is the fixed text
+`animal-room retained-data v1` and its second line is the time the data was
+kept. The marker is written only when records or settings were genuinely
+preserved, never on a `--purge`.
+
+**Reinstall in place (same machine).** Just run the installer again with the
+same install root:
+
+```bash
+curl -fsSL https://animalroom.app/install.sh | bash
+```
+
+It finds the marker, confirms the directory holds retained data rather than an
+unrelated folder, re-establishes the checkout around your existing `data/`,
+`backups/`, and `.env`, and starts the app. Nothing is replaced.
+
+**Move to another machine.** Copy the whole app folder, or at minimum these
+four items, into the matching app directory (for example `bask/` or `shed/`) on
+the new machine:
+
+- `data/` — your records and history
+- `backups/` — existing backup archives
+- `.env` — settings, access codes, and integration credentials
+- `.animal-room-retained-data` — the marker that authorises reinstall-in-place
+
+Then run the installer on the new machine with the same install root. It
+validates the marker, re-establishes the checkout around the copied data, and
+brings the app up where it left off. Without the marker the installer treats the
+directory as a non-checkout and will not reuse it, so copy the marker along with
+the data.
+
 ## Data ownership and safety
 
 - Bask and Shed keep ordinary files in separate `data` directories.

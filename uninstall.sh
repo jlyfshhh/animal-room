@@ -326,6 +326,28 @@ for app in "${selected_apps[@]}"; do
         *) run rm -rf "$item" ;;
       esac
     done
+
+    # Removing the checkout takes .git with it, so what is left no longer looks
+    # like a repository. Leave a marker beside the preserved records so a later
+    # reinstall-in-place — here, or after the folder is copied to another
+    # machine — can recognise a retained-data directory and re-establish the
+    # checkout around it instead of refusing a non-checkout. get-bask.sh reads
+    # this; we only produce it. It is written ONLY when records or settings were
+    # genuinely kept, and never on a --purge (that branch deletes everything).
+    # The first line is a fixed, versioned header the reader matches exactly;
+    # the second line records when the data was retained.
+    kept=false
+    for keep in data backups .env; do
+      [[ -e "$dir/$keep" || -L "$dir/$keep" ]] && kept=true
+    done
+    if [[ "$kept" == true ]]; then
+      marker="$dir/.animal-room-retained-data"
+      if [[ "$dry_run" == true ]]; then
+        printf '  would write: %s\n' "$marker"
+      else
+        printf 'animal-room retained-data v1\n%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >"$marker"
+      fi
+    fi
   fi
 done
 
