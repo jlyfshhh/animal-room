@@ -245,6 +245,49 @@ expect_err "not inside the required mount"
 child_ran && fail_test "a backup ran onto a destination outside the mount"
 echo "  a destination outside the required mount is refused"
 
+# ── A per-app destination may not escape the backup root through a symlink ────
+# Regression for the 2026-10 F12/F01 finding: the per-app directory was a
+# symlink pointing off the verified device, so the app's backup command wrote a
+# valid database AND the settings copy OUTSIDE the trusted root, and retention
+# could delete files out there too. The run returned non-zero only AFTER the
+# data had already escaped — a late failure is not mount safety. Each case below
+# asserts that nothing is created or removed outside the root.
+reset
+outside="$work/outside"
+rm -rf "$outside"; mkdir -p "$outside"
+rm -rf "$dest/shed"
+ln -s "$outside" "$dest/shed"
+run_wrapper ANIMAL_BACKUP_APPS=shed
+[ "$code" -ne 0 ] || fail_test "a symlinked destination was reported as success"
+expect_err "symlink"
+expect_json "d['ok']" False
+expect_json "'shed' in d['succeeded']" False
+expect_json "any(f.startswith('shed') for f in d['failed'])" True
+child_ran && fail_test "the backup command ran against a symlinked destination"
+[ -z "$(find "$outside" -type f)" ] \
+  || fail_test "a database or settings copy was written outside the backup root through a symlink"
+echo "  a symlinked per-app destination is refused before anything is written outside the root"
+
+# The same must hold for retention: deleting through a symlinked per-app
+# directory would reach off the verified device.
+reset
+outside="$work/outside"
+rm -rf "$outside"; mkdir -p "$outside"
+printf 'old\n' >"$outside/shed-20200101-000000.sqlite"
+printf 'old\n' >"$outside/shed-20200102-000000.sqlite"
+touch -t 202001010000 "$outside/shed-20200101-000000.sqlite"
+touch -t 202001020000 "$outside/shed-20200102-000000.sqlite"
+rm -rf "$dest/shed"
+ln -s "$outside" "$dest/shed"
+run_wrapper ANIMAL_BACKUP_APPS=shed
+[ "$code" -ne 0 ] || fail_test "retention accepted a symlinked destination"
+expect_err "refusing to delete through it"
+[ -e "$outside/shed-20200101-000000.sqlite" ] \
+  || fail_test "retention deleted a file outside the backup root through a symlink"
+[ -e "$outside/shed-20200102-000000.sqlite" ] \
+  || fail_test "retention deleted a file outside the backup root through a symlink"
+echo "  retention refuses to delete through a symlinked per-app destination"
+
 # ── Install root comes from configuration or the installer's default ─────────
 reset
 run_wrapper ANIMAL_ROOM_HOME=

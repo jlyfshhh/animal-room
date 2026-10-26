@@ -82,6 +82,11 @@ skipped=()
 app_problems=()
 new_archive=""
 scan_apps=true
+# Set true by validate_dest only once an app's destination has been proven to be
+# a real directory safely inside the backup root. backup_shed reads it to decide
+# whether writing the settings copy is safe, so a rejected destination can never
+# receive the .env along the same escaped path.
+dest_ok=false
 
 note() { printf '%s\n' "$*"; }
 fail() { printf 'ERROR: %s\n' "$*" >&2; }
@@ -261,6 +266,37 @@ run_child() {
   )
 }
 
+# Resolve and validate an app's destination directory BEFORE anything is
+# written to it. A per-app directory that is a symlink — or that otherwise
+# resolves outside the backup root — would let the app's own backup command,
+# the settings copy, and retention write and delete files on the wrong device,
+# off the verified mount entirely. A later non-zero exit does not undo those
+# writes: the data has already escaped. preflight has already canonicalised
+# backup_root (and confirmed it sits inside any required mount), so the only
+# untrusted path component here is the final app directory.
+validate_dest() {
+  local app="$1" dest="$backup_root/$app" real
+  dest_ok=false
+  if [ -L "$dest" ]; then
+    problem "$app: destination $dest is a symlink; refusing to follow it off the backup device"
+    return 1
+  fi
+  if ! mkdir -p "$dest"; then
+    problem "$app: cannot create $dest"
+    return 1
+  fi
+  real="$(cd -- "$dest" 2>/dev/null && pwd -P)" || {
+    problem "$app: cannot resolve destination $dest"
+    return 1
+  }
+  case "$real/" in
+    "$backup_root"/*/) ;;
+    *) problem "$app: destination $real resolves outside the backup root $backup_root; refusing to write"; return 1 ;;
+  esac
+  dest_ok=true
+  return 0
+}
+
 # Run the app's own backup command, then check what it actually left behind. A
 # zero exit alone is not enough: the destination must hold a new, non-empty
 # database/archive file, or nothing was backed up.
@@ -271,10 +307,7 @@ backup_with_child() {
     problem "$app: $dir/scripts/backup.sh is missing or not executable"
     return 1
   fi
-  if ! mkdir -p "$dest"; then
-    problem "$app: cannot create $dest"
-    return 1
-  fi
+  validate_dest "$app" || return 1
   before="$(list_archives "$dest")"
   # Shed's own script picks the live database, takes a consistent copy through
   # SQLite's backup API, verifies it, and handles retention. Do not reimplement
@@ -314,6 +347,14 @@ backup_bask() {
 backup_shed() {
   local dir="$install_root/shed" dest="$backup_root/shed" rc=0
   backup_with_child shed || rc=$?
+  # Never write the settings copy to a destination that failed validation. If
+  # validate_dest rejected it (for example a symlinked per-app directory that
+  # points off the device), backup_with_child has already recorded the failure;
+  # copying .env along that same escaped path is exactly the leak F12 flagged.
+  if [ "$dest_ok" != true ]; then
+    [ "$rc" -ne 0 ] || rc=1
+    return "$rc"
+  fi
   # The settings file is not in the database and is needed to restore. It is
   # copied whether or not the database step worked (restoring needs both), but a
   # failed copy fails the app, and it is counted apart from database archives.
@@ -391,9 +432,18 @@ prune() {
 }
 
 for app in $apps; do
-  prune "$backup_root/$app" "*.sqlite"
-  prune "$backup_root/$app" "*.tar.gz"
-  prune "$backup_root/$app" "*.env"
+  dir="$backup_root/$app"
+  # Retention deletes files, so the same mount-escape rule applies: a symlinked
+  # per-app directory must never let `rm` reach off the verified device. Refuse
+  # it here too (validate_dest already refused writing to it above).
+  if [ -L "$dir" ]; then
+    fail "retention: $dir is a symlink; refusing to delete through it off the backup device"
+    failures[${#failures[@]}]="retention: $dir is a symlink"
+    continue
+  fi
+  prune "$dir" "*.sqlite"
+  prune "$dir" "*.tar.gz"
+  prune "$dir" "*.env"
 done
 
 if ! write_status; then
